@@ -18,7 +18,7 @@ void DTree::Learn(
     Ptr<TrainingData> total_samples = TrainingData::Create(settings);
     total_samples->PushBackImages(low_reader, high_reader);
 
-    Learn(std::move(total_samples));
+    Learn(total_samples);
 }
 
 void DTree::Learn(const Ptr<TrainingData> & total_samples)
@@ -27,7 +27,7 @@ void DTree::Learn(const Ptr<TrainingData> & total_samples)
     if (total_samples->Num() == 0) return;
     MyLogger::debug << "Tree learning... num:" << total_samples->Num() << endl;
 
-    DTNode* node = new DTNode(std::move(total_samples));
+    DTNode* node = new DTNode(total_samples);
     root.reset(node);
     // iterate all unprocessed node, starting from the first
     queue<DTNode*> unprocessed;
@@ -59,16 +59,18 @@ void DTree::Learn(const Ptr<TrainingData> & total_samples)
                 GenerateTestWithMaxErrorReduction(res.fitting_error, *node->samples, rand());
             if (result.error_reduction > 0)
             {
+                // this node is a non-leaf node
                 Ptr<TrainingData> left = TrainingData::Create(settings);
                 Ptr<TrainingData> right = TrainingData::Create(settings);
                 node->samples->Split(result.test, left.get(), right.get());
 
-                node->BecomeNonLeafNode(std::move(left), std::move(right), result.test);
+                node->BecomeNonLeafNode(left, right, result.test);
                 unprocessed.push(node->left.get());
                 unprocessed.push(node->right.get());
             }
             else
             {
+                // this node is a leaf node
                 node->BecomeLeafNode(res.c);
             }
         }

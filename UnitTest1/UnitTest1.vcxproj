@@ -88,8 +88,8 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>D:\opencv\build\include;$(IncludePath)</IncludePath>
-    <LibraryPath>D:\opencv\build\x64\vc15\lib;$(CUDA_PATH)\lib\x64;$(LibraryPath)</LibraryPath>
+    <IncludePath>..\include;$(IncludePath)</IncludePath>
+    <LibraryPath>..\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>

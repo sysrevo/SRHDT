@@ -18,6 +18,10 @@ namespace imgsr
             settings(sets), len_vec(sets.patch_size * sets.patch_size) {}
 
         void Split(const BinaryTest& test, TrainingData* left_out_ptr, TrainingData* right_out_ptr) const;
+        inline void Split(const BinaryTest & test, Ptr<TrainingData> left_out, Ptr<TrainingData> right_out) const
+        {
+            Split(test, left_out.get(), right_out.get());
+        }
 
         size_t GetLeftPatchesNumber(const BinaryTest& test) const;
 
