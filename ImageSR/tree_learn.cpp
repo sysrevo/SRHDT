@@ -15,13 +15,13 @@ void DTree::Learn(
 {
     if (low_reader->Empty()) return;
 
-    UPtr<TrainingData> total_samples = make_unique<TrainingData>(settings);
+    Ptr<TrainingData> total_samples = TrainingData::Create(settings);
     total_samples->PushBackImages(low_reader, high_reader);
 
     Learn(std::move(total_samples));
 }
 
-void DTree::Learn(UPtr<TrainingData>&& total_samples)
+void DTree::Learn(const Ptr<TrainingData> & total_samples)
 {
     using std::endl;
     if (total_samples->Num() == 0) return;
@@ -59,8 +59,8 @@ void DTree::Learn(UPtr<TrainingData>&& total_samples)
                 GenerateTestWithMaxErrorReduction(res.fitting_error, *node->samples, rand());
             if (result.error_reduction > 0)
             {
-                UPtr<TrainingData> left = make_unique<TrainingData>(settings);
-                UPtr<TrainingData> right = make_unique<TrainingData>(settings);
+                Ptr<TrainingData> left = TrainingData::Create(settings);
+                Ptr<TrainingData> right = TrainingData::Create(settings);
                 node->samples->Split(result.test, left.get(), right.get());
 
                 node->BecomeNonLeafNode(std::move(left), std::move(right), result.test);
@@ -131,9 +131,9 @@ void HDTrees::Learn(const Ptr<ImageReader> & low_reader, const Ptr<ImageReader> 
             buf_high.push_back(high);
         }
 
-        Ptr<MemoryImageReader> low_imgs = make_shared<MemoryImageReader>();
+        Ptr<MemoryImageReader> low_imgs = MemoryImageReader::Create();
         low_imgs->Set(buf_low);
-        Ptr<MemoryImageReader> high_imgs = make_shared<MemoryImageReader>();
+        Ptr<MemoryImageReader> high_imgs = MemoryImageReader::Create();
         high_imgs->Set(buf_high);
 
         trees.push_back(DTree(settings));

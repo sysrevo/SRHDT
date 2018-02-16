@@ -72,7 +72,7 @@ namespace imgsr
         }
 
     private:
-        void Learn(UPtr<TrainingData> && total_samples);
+        void Learn(const Ptr<TrainingData> & total_samples);
     };
 
     class HDTrees

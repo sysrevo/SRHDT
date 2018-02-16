@@ -9,12 +9,31 @@ namespace imgsr
     class TrainingData
     {
     public:
+        inline static Ptr<TrainingData> Create(const Settings & sets)
+        {
+            return make_shared<TrainingData>(sets);
+        }
+
         inline TrainingData(const Settings & sets) :
             settings(sets), len_vec(sets.patch_size * sets.patch_size) {}
 
         void Split(const BinaryTest& test, TrainingData* left_out_ptr, TrainingData* right_out_ptr) const;
 
         size_t GetLeftPatchesNumber(const BinaryTest& test) const;
+
+
+        void Reserve(size_t patch_num);
+        void Resize(size_t num);
+        void ShrinkToFit();
+        void Clear();
+        void ClearAndRelease();
+        void Append(const TrainingData & data);
+        void Append(const vector<TrainingData> & bunch_of_data);
+
+        void PushBackPatch(const Mat & low_patch, const Mat & high_patch);
+        void PushBackImage(Mat low, Mat high);
+        void PushBackImages(const Ptr<ImageReader> & low_imgs_reader,
+            const Ptr<ImageReader> & high_imgs_reader, int n_threads = 1);
 
         inline size_t Num() const {
             return data_x.size() / len_vec;
@@ -58,18 +77,6 @@ namespace imgsr
 
 #undef RETURN_ROW_MAT
 
-        void Reserve(size_t patch_num);
-        void Resize(size_t num);
-        void ShrinkToFit();
-        void Clear();
-        void ClearAndRelease();
-        void Append(const TrainingData & data);
-        void Append(const vector<TrainingData> & bunch_of_data);
-
-        void PushBackPatch(const Mat & low_patch, const Mat & high_patch);
-        void PushBackImage(Mat low, Mat high);
-        void PushBackImages(const Ptr<ImageReader> & low_imgs_reader, 
-            const Ptr<ImageReader> & high_imgs_reader, int n_threads = 1);
 
         const Settings settings;
         const int len_vec;

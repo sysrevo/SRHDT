@@ -92,6 +92,14 @@ namespace imgsr
                 }
                 return res;
             }
+
+            template<class T, class FilterFunc>
+            vector<T> Select(const vector<T> & in, FilterFunc func)
+            {
+                vector<T> res;
+                std::copy_if(in.begin(), in.end(), back_inserter(res), func);
+                return res;
+            }
         } // Math
 
         namespace image

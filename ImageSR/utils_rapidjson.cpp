@@ -147,7 +147,7 @@ void json::SerializeBinaryTest(const BinaryTest & test, AllocatorType & allocato
 // ------------------------ Node -----------------
 UPtr<DTNode> json::DeserializeNode(const Value & val, int patch_size)
 {
-    UPtr<DTNode> node = std::make_unique<DTNode>();
+    UPtr<DTNode> node = UPtr<DTNode>(new DTNode());
     node->is_leaf = val[key_is_leaf].GetBool();
     if (node->is_leaf)
     {

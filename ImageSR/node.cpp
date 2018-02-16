@@ -9,11 +9,11 @@ void DTNode::BecomeLeafNode(const EMat & c)
     this->c = c;
 }
 
-void DTNode::BecomeNonLeafNode(UPtr<TrainingData> && left_samples, UPtr<TrainingData> && right_samples, const BinaryTest & test)
+void DTNode::BecomeNonLeafNode(const Ptr<TrainingData> & left_samples, const Ptr<TrainingData> & right_samples, const BinaryTest& test)
 {
     this->is_leaf = false;
-    this->left = UPtr<DTNode>(new DTNode(std::move(left_samples)));
-    this->right = UPtr<DTNode>(new DTNode(std::move(right_samples)));
+    this->left = UPtr<DTNode>(new DTNode(left_samples));
+    this->right = UPtr<DTNode>(new DTNode(right_samples));
     this->test = test;
 }
 

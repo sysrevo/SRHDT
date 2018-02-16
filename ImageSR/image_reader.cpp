@@ -1,7 +1,24 @@
 #include "stdafx.h"
 #include "image_reader.h"
+#include "utils.h"
 
 using namespace imgsr;
+
+ImageReader::ImageReader(const vector<HandleFunc> & handlers_)
+{
+    handlers = utils::math::Select(handlers_, [](HandleFunc func) 
+    {
+        return func != nullptr;
+    });
+}
+
+Mat ImageReader::Get(int ind) const
+{
+    Mat res = Read(ind);
+    for (const auto & func : handlers)
+        if (func) func(&res);
+    return res;
+}
 
 void MemoryImageReader::Set(const vector<string> & paths)
 {
@@ -38,6 +55,11 @@ Mat MemoryImageReader::Read(int ind) const
 void FileImageReader::Set(const vector<string> & paths)
 {
     buf = paths;
+}
+
+void FileImageReader::Set(const string & path)
+{
+    Set({ path });
 }
 
 bool FileImageReader::Empty() const
@@ -86,16 +108,14 @@ Mat HandlerImageReader::Read(int ind) const
         }
         ind -= size;
     }
-    if (!img.empty())
-    {
-        for (const auto & func : handles)
-            func(&img);
-    }
     return img;
 }
 
-void HandlerImageReader::Set(const Ptr<ImageReader> & reader)
+void HandlerImageReader::SetInput(
+    const vector<Ptr<ImageReader>> & readers_)
 {
-    readers.clear();
-    readers.push_back(reader);
+    readers = utils::math::Select(readers_, [](const Ptr<ImageReader> & reader)
+    {
+        return reader != nullptr;
+    });
 }
