@@ -170,21 +170,20 @@ namespace imgsr
             // ========================================================
 
             /// <summary>
-            /// Foreach pixel in this image
+            /// For each patch in an image.
             /// </summary>
             /// <param name="img"></param>
             /// <param name="patch_size"></param>
             /// <param name="overlap"></param>
             /// <param name="func"></param>
+            /// <param name="n_threads"></param>
             template<class PatchHandleFunc>
-            void ForeachPatch(const Mat & img,
-                int patch_size, int overlap, PatchHandleFunc func, bool parallel = false)
+            void ForeachPatch(const Mat & img, int patch_size, int overlap, PatchHandleFunc func)
             {
                 if (img.empty()) return;
                 assert(patch_size > 0);
                 int jump = patch_size - overlap;
                 assert(jump > 0);
-
 
                 for (int y = 0; y + patch_size <= img.rows; y += jump)
                 {
@@ -194,6 +193,31 @@ namespace imgsr
                         assert(x + patch_size <= img.cols);
                         const cv::Rect rect(x, y, patch_size, patch_size);
                         func(rect, img(rect));
+                    }
+                }
+            }
+
+            template<class PatchHandleFunc>
+            void ForeachPatchParallel(const Mat & img, int patch_size, int overlap, PatchHandleFunc func, int n_threads = 1)
+            {
+                if (img.empty()) return;
+                assert(patch_size > 0);
+                int jump = patch_size - overlap;
+                assert(jump > 0);
+
+                int y_limit = img.rows - patch_size;
+                int x_limit = img.cols - patch_size;
+
+                #pragma omp parallel for num_threads(n_threads)
+                for (int y = 0; y <= y_limit; y += jump)
+                {
+                    int tid = omp_get_thread_num();
+                    assert(y + patch_size <= img.rows);
+                    for (int x = 0; x <= x_limit; x += jump)
+                    {
+                        assert(x + patch_size <= img.cols);
+                        const cv::Rect rect(x, y, patch_size, patch_size);
+                        func(rect, img(rect), tid);
                     }
                 }
             }

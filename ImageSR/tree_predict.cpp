@@ -17,14 +17,21 @@ Mat DTree::PredictImage(Mat low, cv::Size expected_size) const
     low = image::ResizeImage(low, low.size(), settings.patch_size, settings.overlap);
     Mat edge = image::GetEdgeMap(low, settings.canny_edge_threshold);
     low = image::GrayImage2FloatGrayMap(low);
+    
+    int n_threads = 4;
+    vector<Mat> tbuf_res(n_threads);
+    vector<Mat> tbuf_count(n_threads);
 
-    Mat result(low.size(), low.type(), Scalar(0));
-    Mat count_map(result.size(), CV_8U, Scalar(0));
+    for (Mat & img : tbuf_res)
+        img = Mat(low.size(), low.type(), Scalar(0));
 
-    int rotate_times = settings.fuse_option == Settings::FuseModelOption::Rotate ? 4 : 1;
+    for (Mat & img : tbuf_count)
+        img = Mat(low.size(), CV_8U, Scalar(0));
 
-    image::ForeachPatch(low, settings.patch_size, settings.overlap,
-    [&edge, &result, &count_map, this, rotate_times](const cv::Rect& rect, const Mat& pat_in)
+    int rotate_times = settings.GetRotateTimes();
+
+    image::ForeachPatchParallel(low, settings.patch_size, settings.overlap,
+    [&edge, &tbuf_res, &tbuf_count, this, rotate_times](const cv::Rect& rect, const Mat& pat_in, int tid)
     {
         Mat pat_res;
         Mat pat_edge = edge(rect);
@@ -37,15 +44,22 @@ Mat DTree::PredictImage(Mat low, cv::Size expected_size) const
         {
             pat_res = Mat(pat_in);
         }
-        result(rect) += pat_res;
-        count_map(rect) += 1;
-    });
+        tbuf_res[tid](rect) += pat_res;
+        tbuf_count[tid](rect) += 1;
+    }, n_threads);
 
-    {   // divide to get the average color of each pixel
-        // some overlapped pixel will have 9 values
-        count_map.convertTo(count_map, CV_32F);
-        result /= count_map;
-    }
+    Mat result(low.size(), low.type(), Scalar(0));
+    for (const Mat & img : tbuf_res)
+        result += img;
+
+    Mat count_map(result.size(), CV_8U, Scalar(0));
+    for (const Mat & img : tbuf_count)
+        count_map += img;
+
+    // divide to get the average color of each pixel
+    // some overlapped pixel will have 9 values
+    count_map.convertTo(count_map, CV_32F);
+    result /= count_map;
 
     result = image::FloatGrayMap2GrayImage(result);
     return result;

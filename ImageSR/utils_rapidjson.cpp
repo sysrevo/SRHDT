@@ -222,7 +222,7 @@ void json::DeserializeDTree(const Value & tree_obj, DTree* tree_out_ptr)
 }
 
 // ------------------------ HDTrees -------------------------
-void imgsr::json::SerializeHDTrees(const HDTrees & hdtrees, AllocatorType & alloc, Value * hdt_obj)
+void json::SerializeHDTrees(const HDTrees & hdtrees, AllocatorType & alloc, Value * hdt_obj)
 {
     hdt_obj->SetObject();
 
@@ -243,7 +243,7 @@ void imgsr::json::SerializeHDTrees(const HDTrees & hdtrees, AllocatorType & allo
     hdt_obj->AddMember(key_trees, trees_obj, alloc);
 }
 
-void imgsr::json::DeserializeHDTrees(const Value & hdt_obj, HDTrees * tree_out)
+void json::DeserializeHDTrees(const Value & hdt_obj, HDTrees * tree_out)
 {
     if (!tree_out) return;
 

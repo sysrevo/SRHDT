@@ -58,6 +58,11 @@ namespace imgsr
             return patch_size * patch_size;
         }
 
+        inline int GetRotateTimes() const
+        {
+            return fuse_option == Settings::FuseModelOption::Rotate ? 4 : 1;
+        }
+
         inline bool operator==(const Settings & other) const
         {
             return memcmp(this, &other, sizeof(Settings)) == 0;

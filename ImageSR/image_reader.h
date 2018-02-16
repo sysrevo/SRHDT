@@ -15,7 +15,6 @@ namespace imgsr
             : ImageReader(vector<HandleFunc>({ func })) {}
 
         virtual bool Empty() const = 0;
-
         virtual size_t Size() const = 0;
 
         Mat Get(int ind) const;

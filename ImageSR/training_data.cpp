@@ -106,7 +106,8 @@ void TrainingData::HandlePreparedImage(Mat low, Mat high)
     int rotate_times = settings.fuse_option == Settings::FuseModelOption::Rotate ? 4 : 1;
 
     image::ForeachPatch(low, settings.patch_size, settings.overlap,
-        [&edge, &high, this, rotate_times, &buf_pat_low, &buf_pat_high](const cv::Rect& rect, const Mat& pat_low)
+        [&edge, &high, this, rotate_times, &buf_pat_low, &buf_pat_high](
+            const cv::Rect& rect, const Mat& pat_low)
     {
         const Mat pat_edge = edge(rect);
         const Mat pat_high = high(rect);
@@ -173,23 +174,23 @@ void TrainingData::Append(const vector<TrainingData>& data_to_append)
     }
 }
 
-void TrainingData::PushBackImages(const Ptr<ImageReader> & low_imgs_reader,
-    const Ptr<ImageReader> & high_imgs_reader, int n_threads)
+void TrainingData::PushBackImages(const Ptr<ImageReader> & low_imgs,
+    const Ptr<ImageReader> & high_imgs, int n_threads)
 {
-    assert(low_imgs_reader->Size() == high_imgs_reader->Size());
-    if (low_imgs_reader->Empty()) return;
+    assert(low_imgs->Size() == high_imgs->Size());
+    if (low_imgs->Empty()) return;
     if (n_threads < 1) n_threads = 1;
 
     vector<TrainingData> buf_threads;
-    buf_threads.resize(low_imgs_reader->Size(), TrainingData(settings));
+    buf_threads.resize(low_imgs->Size(), TrainingData(settings));
 
-    __int64 n_imgs = __int64(low_imgs_reader->Size());
+    size_t n_imgs = low_imgs->Size();
 
-#pragma omp parallel for
-    for (__int64 i = 0; i < n_imgs; ++i)
+    #pragma omp parallel for
+    for (int i = 0; i < n_imgs; ++i)
     {
         int tid = omp_get_thread_num();
-        buf_threads[tid].PushBackImage(low_imgs_reader->Get(i), high_imgs_reader->Get(i));
+        buf_threads[tid].PushBackImage(low_imgs->Get(i), high_imgs->Get(i));
     }
 
     Append(buf_threads);
