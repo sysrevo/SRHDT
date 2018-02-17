@@ -69,34 +69,35 @@ Mat DTree::PredictPatch(const Mat & pat_in) const
 {
     assert(pat_in.cols == settings.patch_size && pat_in.rows == pat_in.cols);
 
-    int vec_len = pat_in.rows * pat_in.cols;
-    EMat model_buf = EMat::Zero(vec_len, vec_len);
+    int len_vec = pat_in.rows * pat_in.cols;
+    int n_models = 0;
 
-    int rotate_times = settings.fuse_option == Settings::FuseModelOption::Rotate ? 4 : 1;
+    EMat model = EMat::Zero(len_vec, len_vec);
     {
         Size size = Size(settings.patch_size, settings.patch_size);
-        DoubleBuffers<Mat> pat_buf;
-        pat_buf.front = Mat(size, pat_in.type());
-        pat_buf.back = Mat(size, pat_in.type());
-
-        ERowVec vec_buf = ERowVec(vec_len);
-
-        for (int i = 0; i < rotate_times; ++i)
+        ERowVec pat_vec = image::VectorizePatch(pat_in);
         {
-            if (i == 0)
-                pat_in.copyTo(pat_buf.front);
-            else
-            {
-                cv::rotate(pat_buf.front, pat_buf.back, rotate_times);
-            }
-            image::VectorizePatch(pat_buf.front, &vec_buf);
-            auto leaf = root->ReachLeafNode(vec_buf);
-            model_buf += leaf->c;
+            auto leaf = root->ReachLeafNode(pat_vec);
+            model += leaf->c;
+            n_models += 1;
         }
-        model_buf /= rotate_times;
+
+        if (settings.fuse_option == Settings::Rotate)
+        {
+            const int n_rotates = 3;
+            ERowVec vec = pat_vec;
+            for (int i = 0; i < n_rotates; ++i)
+            {
+                vec = math::RotateVector(vec, settings.patch_size, i + 1);
+                auto leaf = root->ReachLeafNode(vec);
+                EMat tmp_model = math::RotateModel(leaf->c, settings.patch_size, i + 1);
+                model += tmp_model;
+            }
+            n_models += n_rotates;
+        }
     }
     ERowVec x = image::VectorizePatch(pat_in);
-    ERowVec res = x * model_buf;
+    ERowVec res = x * model / n_models;
     return image::DevectorizePatch(res, settings.patch_size);;
 }
 

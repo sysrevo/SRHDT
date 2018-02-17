@@ -14,8 +14,7 @@ void RapidJsonSerializer::Serialize(const DTree & tree, std::ostream & os)
     json::SerializeDTree(tree, doc.GetAllocator(), &doc);
 
     OStreamWrapper osw(os);
-    PrettyWriter<OStreamWrapper> writer(osw);
-    doc.Accept(writer);
+    json::SaveDoc(doc, osw);
 }
 
 void RapidJsonSerializer::Deserialize(std::istream & is, DTree * tree)
@@ -34,8 +33,7 @@ void RapidJsonSerializer::Serialize(const HDTrees & hdtrees, std::ostream & os)
     json::SerializeHDTrees(hdtrees, doc.GetAllocator(), &doc);
 
     OStreamWrapper osw(os);
-    PrettyWriter<OStreamWrapper> writer(osw);
-    doc.Accept(writer);
+    json::SaveDoc(doc, osw);
 }
 
 void RapidJsonSerializer::Deserialize(std::istream & is, HDTrees * hdtrees)
@@ -45,4 +43,20 @@ void RapidJsonSerializer::Deserialize(std::istream & is, HDTrees * hdtrees)
     doc.ParseStream(isw);
 
     json::DeserializeHDTrees(doc, hdtrees);
+}
+
+void RapidJsonSerializer::Deserialize(const string & buf, DTree * tree)
+{
+    Document doc;
+    doc.Parse(buf.c_str());
+
+    json::DeserializeDTree(doc, tree);
+}
+
+void RapidJsonSerializer::Deserialize(const string & buf, HDTrees * trees)
+{
+    Document doc;
+    doc.Parse(buf.c_str());
+
+    json::DeserializeHDTrees(doc, trees);
 }

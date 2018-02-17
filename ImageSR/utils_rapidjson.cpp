@@ -197,13 +197,13 @@ void json::SerializeDTree(const DTree & tree, AllocatorType & allocator, Value* 
     Value root_obj;
     SerializeNode(tree.root.get(), allocator, &root_obj);
 
-    Value sets_obj;
-    SerializeSettings(tree.settings, allocator, &sets_obj);
+    //Value sets_obj;
+    //SerializeSettings(tree.settings, allocator, &sets_obj);
 
     Value n_leaf(tree.GetNumLeafNodes());
     Value n_node(tree.GetNumNodes());
 
-    tree_obj->AddMember(key_settings, sets_obj, allocator);
+    //tree_obj->AddMember(key_settings, sets_obj, allocator);
     tree_obj->AddMember(key_n_leaf, n_leaf, allocator);
     tree_obj->AddMember(key_n_node, n_node, allocator);
     tree_obj->AddMember(key_root, root_obj, allocator);
@@ -214,7 +214,7 @@ void json::DeserializeDTree(const Value & tree_obj, DTree* tree_out_ptr)
     assert(tree_out_ptr != nullptr);
     DTree & tree = *tree_out_ptr;
 
-    tree.settings = json::DeserializeSettings(tree_obj[key_settings]);
+    //tree.settings = json::DeserializeSettings(tree_obj[key_settings]);
     tree.root = std::move(DeserializeNode(tree_obj[key_root], tree.settings.patch_size));
 
     assert(tree.GetNumLeafNodes() == tree_obj[key_n_leaf].GetInt());
@@ -226,8 +226,8 @@ void json::SerializeHDTrees(const HDTrees & hdtrees, AllocatorType & alloc, Valu
 {
     hdt_obj->SetObject();
 
-    Value sets_obj;
-    SerializeSettings(hdtrees.settings, alloc, &sets_obj);
+    //Value sets_obj;
+    //SerializeSettings(hdtrees.settings, alloc, &sets_obj);
 
     Value trees_obj;
     trees_obj.SetArray();
@@ -239,7 +239,7 @@ void json::SerializeHDTrees(const HDTrees & hdtrees, AllocatorType & alloc, Valu
         trees_obj.PushBack(tree_obj, alloc);
     }
 
-    hdt_obj->AddMember(key_settings, sets_obj, alloc);
+    //hdt_obj->AddMember(key_settings, sets_obj, alloc);
     hdt_obj->AddMember(key_trees, trees_obj, alloc);
 }
 
@@ -249,7 +249,7 @@ void json::DeserializeHDTrees(const Value & hdt_obj, HDTrees * tree_out)
 
     HDTrees & hdt = *tree_out;
 
-    hdt.settings = json::DeserializeSettings(hdt_obj[key_settings]);
+    //hdt.settings = json::DeserializeSettings(hdt_obj[key_settings]);
     hdt.trees.clear();
 
     const auto & arr = hdt_obj[key_trees].GetArray();
@@ -262,11 +262,5 @@ void json::DeserializeHDTrees(const Value & hdt_obj, HDTrees * tree_out)
     for (int i = 0; i < size; ++i)
     {
         json::DeserializeDTree(arr[i], &hdt.trees[i]);
-    }
-
-    assert(hdt.trees.size() == hdt.settings.layers);
-    for (const auto & tree : hdt.trees)
-    {
-        assert(tree.settings == hdt.settings);
     }
 }

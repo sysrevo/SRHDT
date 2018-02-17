@@ -59,7 +59,7 @@ void FileImageReader::Set(const vector<string> & paths)
 
 void FileImageReader::Set(const string & path)
 {
-    Set({ path });
+    Set(vector<string>({ path }));
 }
 
 bool FileImageReader::Empty() const

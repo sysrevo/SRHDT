@@ -20,5 +20,7 @@ namespace imgsr
         virtual void Serialize(const HDTrees & tree, std::ostream & os) override;
         virtual void Deserialize(std::istream & is, DTree * tree) override;
         virtual void Deserialize(std::istream & is, HDTrees * tree) override;
+        void Deserialize(const string & buf, DTree * tree);
+        void Deserialize(const string & buf, HDTrees * tree);
     };
 }

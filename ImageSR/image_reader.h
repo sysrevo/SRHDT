@@ -101,7 +101,7 @@ namespace imgsr
             :ImageReader(func) {}
 
         void SetInput(const vector<Ptr<ImageReader>> & readers);
-        void SetInput(const Ptr<ImageReader> & reader) { SetInput({ reader }); }
+        void SetInput(const Ptr<ImageReader> & reader) { SetInput(vector<Ptr<ImageReader>>({ reader })); }
 
         virtual bool Empty() const override;
         virtual size_t Size()  const override;

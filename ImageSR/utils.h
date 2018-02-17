@@ -9,7 +9,7 @@ namespace imgsr
         namespace math
         {
             template<class T>
-            inline int Square(T x) { return x * x; }
+            inline T Square(T x) { return x * x; }
 
             inline double Clamp(double val, double min_val, double max_val)
             {
@@ -100,6 +100,57 @@ namespace imgsr
                 std::copy_if(in.begin(), in.end(), back_inserter(res), func);
                 return res;
             }
+
+            int GetRotatedPos(int m, int len_vec, int patch_size, int times);
+
+            template<class InVecType, class OutVecType>
+            void RotateVector(const InVecType & vec, int pat_size, int times, OutVecType* out)
+            {
+                auto & res = *out;
+                int len_vec = vec.cols() == 1 ? vec.rows() : vec.cols();
+                int len = res.cols() == 1 ? res.rows() : res.cols();
+                assert(len_vec == len);
+                for (int i = 0; i < len_vec; ++i)
+                {
+                    res[GetRotatedPos(i, len_vec, pat_size, times)] = vec[i];
+                }
+            }
+
+            template<class InputVector>
+            ERowVec RotateVector(const InputVector & vec, int pat_size, int times)
+            {
+                int len_vec = vec.size();
+                ERowVec out = ERowVec::Zero(len_vec);
+                RotateVector(vec, pat_size, times, &out);
+                return out;
+            }
+
+            template<class InputType, class OutputType>
+            void RotateModel(const InputType & in, int pat_size, int times, OutputType* out)
+            {
+                if (out == nullptr) return;
+                assert(in.cols() == in.rows());
+                int len_vec = in.cols();
+                auto & res = *out;
+                for (int c = 0; c < len_vec; ++c)
+                {
+                    int fc = GetRotatedPos(c, len_vec, pat_size, times);
+                    for (int r = 0; r < len_vec; ++r)
+                    {
+                        int fr = GetRotatedPos(r, len_vec, pat_size, times);
+                        res(r, c) = in(fr, fc);
+                    }
+                }
+            }
+
+            template<class InputType>
+            inline EMat RotateModel(const InputType & in, int pat_size, int times)
+            {
+                InputType res = InputType::Zero(in.cols(), in.rows());
+                RotateModel(in, pat_size, times, &res);
+                return res;
+            }
+
         } // Math
 
         namespace image
@@ -110,6 +161,7 @@ namespace imgsr
             Mat GetGrayImage(const Mat & img);
             Mat GrayImage2FloatGrayMap(const Mat & gray_img);
             Mat FloatGrayMap2GrayImage(const Mat & f_gray);
+
             // ==================================================
             //                  Image Patch Vectorization
             // ==================================================

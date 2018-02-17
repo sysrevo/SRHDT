@@ -26,19 +26,16 @@
     <ClCompile Include="stdafx.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="unittest1.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="test_node.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
     <ClCompile Include="utils_image_test.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="utils_math_test.cpp">
+    <ClCompile Include="training_data_test.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="training_data_test.cpp">
+    <ClCompile Include="binary_test_and_settings_test.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="utils_math_test.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

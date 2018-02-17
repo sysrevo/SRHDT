@@ -11,7 +11,7 @@ using namespace imgsr;
 using Clock = std::chrono::high_resolution_clock;
 
 namespace UnitTest1 {
-    TEST_CLASS(DataStructureTest) 
+    TEST_CLASS(BinaryTestTest) 
     {
     public:
         TEST_METHOD(TestBinaryTestIsOnLeft) 

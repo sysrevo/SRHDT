@@ -103,32 +103,15 @@ void TrainingData::HandlePreparedImage(Mat low, Mat high)
     buf_pat_high.front = Mat(cv::Size(settings.patch_size, settings.patch_size), high.type());
     buf_pat_high.back = Mat(cv::Size(settings.patch_size, settings.patch_size), high.type());
 
-    int rotate_times = settings.fuse_option == Settings::FuseModelOption::Rotate ? 4 : 1;
-
     image::ForeachPatch(low, settings.patch_size, settings.overlap,
-        [&edge, &high, this, rotate_times, &buf_pat_low, &buf_pat_high](
+        [&edge, &high, this, &buf_pat_low, &buf_pat_high](
             const cv::Rect& rect, const Mat& pat_low)
     {
         const Mat pat_edge = edge(rect);
         const Mat pat_high = high(rect);
         if (cv::countNonZero(pat_edge) > 0)
         {
-            for (int i = 0; i < rotate_times; ++i)
-            {
-                if (i == 0)
-                {
-                    pat_low.copyTo(buf_pat_low.front);
-                    pat_high.copyTo(buf_pat_high.front);
-                }
-                else
-                {
-                    cv::rotate(buf_pat_low.front, buf_pat_low.back, cv::ROTATE_90_CLOCKWISE);
-                    cv::rotate(buf_pat_high.front, buf_pat_high.back, cv::ROTATE_90_CLOCKWISE);
-                    buf_pat_low.Swap();
-                    buf_pat_high.Swap();
-                }
-                this->PushBackPatch(buf_pat_low.front, buf_pat_high.front);
-            }
+            this->PushBackPatch(pat_low, pat_high);
         }
     });
 }

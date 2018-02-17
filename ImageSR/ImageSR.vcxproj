@@ -193,7 +193,6 @@
     <ClCompile Include="rapid_json_serializer.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <Natvis Include="eigen.natvis" />
     <Natvis Include="eigen_image_watch.natvis" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
