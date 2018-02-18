@@ -172,6 +172,7 @@
     <ClInclude Include="tree.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
+    <ClInclude Include="utils_vector_rotator.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="image_reader.cpp" />
@@ -191,6 +192,7 @@
     <ClCompile Include="utils_system.cpp" />
     <ClCompile Include="tree_learn.cpp" />
     <ClCompile Include="rapid_json_serializer.cpp" />
+    <ClCompile Include="utils_vector_rotator.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Natvis Include="eigen_image_watch.natvis" />

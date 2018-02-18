@@ -1,9 +1,12 @@
 #include "stdafx.h"
 #include "tree.h"
 #include "utils.h"
+#include "utils_vector_rotator.h"
 
 using namespace imgsr;
 using namespace imgsr::utils;
+
+utils::VectorRotator rotator(1);
 
 Mat DTree::PredictImage(Mat low, cv::Size expected_size) const
 {
@@ -28,10 +31,10 @@ Mat DTree::PredictImage(Mat low, cv::Size expected_size) const
     for (Mat & img : tbuf_count)
         img = Mat(low.size(), CV_8U, Scalar(0));
 
-    int rotate_times = settings.GetRotateTimes();
+    rotator = VectorRotator(settings.patch_size);
 
     image::ForeachPatchParallel(low, settings.patch_size, settings.overlap,
-    [&edge, &tbuf_res, &tbuf_count, this, rotate_times](const cv::Rect& rect, const Mat& pat_in, int tid)
+    [&edge, &tbuf_res, &tbuf_count, this](const cv::Rect& rect, const Mat& pat_in, int tid)
     {
         Mat pat_res;
         Mat pat_edge = edge(rect);
@@ -88,9 +91,9 @@ Mat DTree::PredictPatch(const Mat & pat_in) const
             ERowVec vec = pat_vec;
             for (int i = 0; i < n_rotates; ++i)
             {
-                vec = math::RotateVector(vec, settings.patch_size, i + 1);
+                vec = rotator.RotateVector(vec, 1);
                 auto leaf = root->ReachLeafNode(vec);
-                EMat tmp_model = math::RotateModel(leaf->c, settings.patch_size, i + 1);
+                EMat tmp_model = rotator.RotateModel(leaf->c, i + 1);
                 model += tmp_model;
             }
             n_models += n_rotates;

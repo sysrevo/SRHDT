@@ -1,10 +1,11 @@
 #include "stdafx.h"
 #include "CppUnitTest.h"
 #include "../ImageSR/utils.h"
-
+#include "../ImageSR/utils_vector_rotator.h"
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 using namespace imgsr;
 using namespace imgsr::utils;
+
 
 
 TEST_CLASS(MathTest)
@@ -66,11 +67,13 @@ public:
             ++count;
         }
 
+        utils::VectorRotator rotator(6);
+
         ERowVec original_pat_vec = image::VectorizePatch(pat);
         for (int i = 0; i < 3; ++i)
         {
             // get rotated vector
-            ERowVec vec = math::RotateVector(original_pat_vec, 6, i + 1);
+            ERowVec vec = rotator.RotateVector(original_pat_vec, i + 1);
 
             // rotate pat and get vectorized patch
             cv::rotate(pat, pat, cv::ROTATE_90_COUNTERCLOCKWISE);

@@ -95,16 +95,8 @@ void TrainingData::HandlePreparedImage(Mat low, Mat high)
     low = image::GrayImage2FloatGrayMap(low);
     high = image::GrayImage2FloatGrayMap(high);
 
-    DoubleBuffers<Mat> buf_pat_low;
-    DoubleBuffers<Mat> buf_pat_high;
-
-    buf_pat_low.front = Mat(cv::Size(settings.patch_size, settings.patch_size), low.type());
-    buf_pat_low.back = Mat(cv::Size(settings.patch_size, settings.patch_size), low.type());
-    buf_pat_high.front = Mat(cv::Size(settings.patch_size, settings.patch_size), high.type());
-    buf_pat_high.back = Mat(cv::Size(settings.patch_size, settings.patch_size), high.type());
-
     image::ForeachPatch(low, settings.patch_size, settings.overlap,
-        [&edge, &high, this, &buf_pat_low, &buf_pat_high](
+        [&edge, &high, this](
             const cv::Rect& rect, const Mat& pat_low)
     {
         const Mat pat_edge = edge(rect);

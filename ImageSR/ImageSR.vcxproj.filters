@@ -65,6 +65,9 @@
     <ClInclude Include="tree_learn_helper.h">
       <Filter>头文件\system\utils</Filter>
     </ClInclude>
+    <ClInclude Include="utils_vector_rotator.h">
+      <Filter>头文件\system\utils</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -102,6 +105,9 @@
     </ClCompile>
     <ClCompile Include="utils_math.cpp">
       <Filter>源文件\system\utils</Filter>
+    </ClCompile>
+    <ClCompile Include="utils_vector_rotator.cpp">
+      <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

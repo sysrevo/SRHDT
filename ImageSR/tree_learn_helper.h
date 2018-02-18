@@ -147,7 +147,7 @@ BinaryTestResult GenerateTestWithMaxErrorReduction(
 
             return error_reduction;
         } // end of if success
-        return 0.0;
+        return Real(0);
     };
 
     BinaryTestResult res = ForeachRandomBinaryTest(
