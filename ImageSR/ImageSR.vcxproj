@@ -165,9 +165,11 @@
     <ClInclude Include="settings.h" />
     <ClInclude Include="tree_learn_helper.h" />
     <ClInclude Include="tree_serializer.h" />
+    <ClInclude Include="utils_image.h" />
+    <ClInclude Include="utils_math.h" />
     <ClInclude Include="utils_rapidjson.h" />
     <ClInclude Include="utils_logger.h" />
-    <ClInclude Include="utils.h" />
+    <ClInclude Include="utils_filesys.h" />
     <ClInclude Include="training_data.h" />
     <ClInclude Include="tree.h" />
     <ClInclude Include="stdafx.h" />
@@ -189,7 +191,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="utils_system.cpp" />
+    <ClCompile Include="utils_filesys.cpp" />
     <ClCompile Include="tree_learn.cpp" />
     <ClCompile Include="rapid_json_serializer.cpp" />
     <ClCompile Include="utils_vector_rotator.cpp" />

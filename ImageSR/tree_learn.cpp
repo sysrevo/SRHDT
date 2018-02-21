@@ -1,6 +1,6 @@
 #include "stdafx.h"
 #include "tree.h"
-#include "utils.h"
+#include "utils_image.h"
 #include "utils_logger.h"
 #include "training_data.h"
 #include "tree_learn_helper.h"
@@ -117,9 +117,6 @@ void HDTrees::Learn(const Ptr<ImageReader> & low_reader, const Ptr<ImageReader> 
         {
             Mat low = low_reader->Get(img_ind);
             Mat high = high_reader->Get(img_ind);
-
-            high = image::GetGrayImage(high);
-            low = image::GetGrayImage(low);
 
             high = image::ResizeImage(high, high.size(), settings.patch_size, settings.overlap);
             low = image::ResizeImage(low, high.size(), settings.patch_size, settings.overlap);

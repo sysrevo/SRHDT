@@ -1,8 +1,8 @@
 #include "stdafx.h"
-#include "utils.h"
+#include "utils_image.h"
 
-using namespace cv;
-using namespace imgsr::utils;
+using namespace imgsr;
+using namespace utils;
 
 //EVec Image::PatchToVector(const Mat & patch)
 //{
@@ -19,7 +19,7 @@ double image::GetPSNR(const Mat & img1, const Mat & img2)
     tmp.convertTo(tmp, CV_64F);     // cannot make a square on 8 bits
     tmp = tmp.mul(tmp);             // |img1 - img1|^2
 
-    Scalar s = sum(tmp);            // sum elements per channel
+    cv::Scalar s = sum(tmp);            // sum elements per channel
 
     double sse = s.val[0] + s.val[1] + s.val[2]; // sum channels
 
@@ -101,14 +101,14 @@ Mat image::ResizeImage(const Mat & img, cv::Size expected_size, int patch_size, 
 
     Mat res;
     Size size = GetCorrectSize(expected_size, patch_size, jump);
-    cv::resize(img, res, size, 0, 0, INTER_CUBIC);
+    cv::resize(img, res, size, 0, 0, cv::INTER_CUBIC);
     return res;
 }
 
 Mat image::GetEdgeMap(const Mat & img, double threshold)
 {
     Mat out;
-    cv::Canny(img, out, threshold, threshold * 3, 3);
+    cv::Canny(img, out, threshold, threshold * 3);
     return out;
 }
 
@@ -130,16 +130,22 @@ Mat image::GetLowResImage(const Mat & img, float ratio)
     return out;
 }
 
-Mat image::GetGrayImage(const Mat & img)
+image::YCrCbImage image::SplitYCrcb(const Mat & img)
 {
-    Mat gray_img;
-    if (img.type() == CV_8UC3)
-        cv::cvtColor(img, gray_img, COLOR_BGR2GRAY);
-    else if (img.type() == CV_8UC4)
-        cv::cvtColor(img, gray_img, COLOR_BGRA2GRAY);
-    else if (img.type() == CV_8U)
-        gray_img = Mat(img);
-    return gray_img;
+    YCrCbImage res;
+    Mat buf;
+    if(img.type() == CV_8UC3)
+        cv::cvtColor(img, buf, CV_RGB2YCrCb);
+    cv::split(buf, (Mat*)&res);
+    return res;
+}
+
+Mat image::Merge(const YCrCbImage & img)
+{
+    Mat res;
+    cv::merge((Mat*)&img, 3, res);
+    cv::cvtColor(res, res, CV_YCrCb2RGB);
+    return res;
 }
 
 Mat image::GrayImage2FloatGrayMap(const Mat & gray_img)
@@ -157,5 +163,69 @@ Mat image::FloatGrayMap2GrayImage(const Mat & f_gray)
     Mat res = Mat(f_gray);
     res *= kScaleFactor;
     res.convertTo(res, CV_8U);
+    return res;
+}
+
+vector<Mat> image::GetPatches(const Mat & img, const Mat & edge, int pat_size, int overlap)
+{
+    assert(img.type() == CV_32F);
+    assert(edge.type() == CV_8U);
+    assert(img.size() == edge.size());
+
+    vector<Mat> res;
+
+    image::ForeachPatch(img, pat_size, overlap, [&edge, &res](
+            const cv::Rect& rect, const Mat& pat)
+    {
+        if (cv::countNonZero(edge(rect)) > 0)
+            res.push_back(pat);
+    });
+
+    return res;
+}
+
+image::PatchPairs image::GetPatchPairs(const Mat & low, const Mat & high, const Mat & edge, int pat_size, int overlap)
+{
+    assert(low.type() == CV_32F && high.type() == CV_32F);
+    assert(edge.type() == CV_8U);
+    assert(high.size() == edge.size() && high.size() == low.size());
+
+    PatchPairs res;
+
+    image::ForeachPatch(low, pat_size, overlap, [&edge, &high, &res](
+        const cv::Rect& rect, const Mat& pat_low)
+    {
+        if (cv::countNonZero(edge(rect)) > 0)
+        {
+            res.low.push_back(pat_low);
+            res.high.push_back(high(rect));
+        }
+    });
+
+    return res;
+}
+
+vector<vector<Mat>> image::GetPatches(vector<Mat>& imgs, const Mat & edge, int pat_size, int overlap)
+{
+    for (const auto & img : imgs)
+    {
+        assert(img.size() == edge.size());
+        assert(pat_size > overlap);
+    }
+
+    vector<vector<Mat>> res;
+    size_t n_imgs = imgs.size();
+    res.resize(n_imgs);
+
+    image::ForeachPatch(edge, pat_size, overlap, [&imgs, n_imgs, &res](
+        const cv::Rect& rect, const Mat& pat_edge)
+    {
+        if (cv::countNonZero(pat_edge) > 0)
+        {
+            for (int i = 0; i < n_imgs; ++i)
+                res[i].push_back(imgs[i](rect));
+        }
+    });
+
     return res;
 }

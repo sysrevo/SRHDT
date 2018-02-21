@@ -38,9 +38,6 @@
     <ClInclude Include="training_data.h">
       <Filter>头文件\system</Filter>
     </ClInclude>
-    <ClInclude Include="utils.h">
-      <Filter>头文件\system\utils</Filter>
-    </ClInclude>
     <ClInclude Include="utils_rapidjson.h">
       <Filter>头文件\system\utils</Filter>
     </ClInclude>
@@ -68,6 +65,15 @@
     <ClInclude Include="utils_vector_rotator.h">
       <Filter>头文件\system\utils</Filter>
     </ClInclude>
+    <ClInclude Include="utils_math.h">
+      <Filter>头文件\system\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="utils_image.h">
+      <Filter>头文件\system\utils</Filter>
+    </ClInclude>
+    <ClInclude Include="utils_filesys.h">
+      <Filter>头文件\system\utils</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -77,9 +83,6 @@
       <Filter>源文件\system\utils</Filter>
     </ClCompile>
     <ClCompile Include="utils_image.cpp">
-      <Filter>源文件\system\utils</Filter>
-    </ClCompile>
-    <ClCompile Include="utils_system.cpp">
       <Filter>源文件\system\utils</Filter>
     </ClCompile>
     <ClCompile Include="training_data.cpp">
@@ -108,6 +111,9 @@
     </ClCompile>
     <ClCompile Include="utils_vector_rotator.cpp">
       <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="utils_filesys.cpp">
+      <Filter>源文件\system\utils</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

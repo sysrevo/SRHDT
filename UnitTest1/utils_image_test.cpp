@@ -1,10 +1,10 @@
 #include "stdafx.h"
 #include "CppUnitTest.h"
-#include "../ImageSR/utils.h"
+#include "../ImageSR/utils_image.h"
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 using namespace imgsr;
-using namespace imgsr::utils;
+using namespace utils;
 
 TEST_CLASS(ImageTest)
 {
@@ -50,7 +50,7 @@ public:
     {
         using namespace cv;
         Mat img = cv::imread("..\\..\\UnitTest1\\test_256_4.png", CV_LOAD_IMAGE_UNCHANGED);
-        img = image::GetGrayImage(img);
+        img = image::SplitYCrcb(img);
         Assert::AreEqual(img.type(), CV_8U);
 
         image::ForeachPatch(img, 6, 4, [&img](const Rect & rect, Mat & patch)
@@ -66,7 +66,7 @@ public:
         using namespace cv;
         Mat img = cv::imread("..\\..\\UnitTest1\\test_256_4.png", CV_LOAD_IMAGE_UNCHANGED);
         img = image::ResizeImage(img, img.size(), 6, 4);
-        img = image::GetGrayImage(img);
+        img = image::SplitYCrcb(img);
         img = image::GrayImage2FloatGrayMap(img);
 
         image::ForeachPatch(img, 6, 4, [&img](const Rect & rect, Mat & patch)
@@ -94,7 +94,7 @@ public:
         using namespace cv;
         Mat img = cv::imread("..\\..\\UnitTest1\\test_256_4.png", CV_LOAD_IMAGE_UNCHANGED);
         img = image::ResizeImage(img, img.size(), 6, 4);
-        img = image::GetGrayImage(img);
+        img = image::SplitYCrcb(img);
         img = image::GrayImage2FloatGrayMap(img);
 
         image::ForeachPatch(img, 6, 4, [&img](const Rect & rect, Mat & patch)

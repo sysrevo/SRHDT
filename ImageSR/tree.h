@@ -49,7 +49,7 @@ namespace imgsr
         /// <param name="expected_height">The height of high-res output image. Must be at least low's height</param>
         /// <param name="fuse_option"></param>
         /// <returns>The high-res image predict by this decision tree</returns>
-        Mat PredictImage(Mat low, cv::Size expected_size) const;
+        Mat PredictImage(const Mat & in_low, cv::Size size) const;
 
         /// <summary>
         /// Predict an input patch. Please modified this->settings to match requirements before calling this function.

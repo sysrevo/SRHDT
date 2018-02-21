@@ -35,7 +35,7 @@ namespace imgsr
         void Append(const vector<TrainingData> & bunch_of_data);
 
         void PushBackPatch(const Mat & low_patch, const Mat & high_patch);
-        void PushBackImage(Mat low, Mat high);
+        void PushBackImage(const Mat & in_low, const Mat & in_high);
         void PushBackImages(const Ptr<ImageReader> & low_imgs_reader,
             const Ptr<ImageReader> & high_imgs_reader, int n_threads = 1);
 
@@ -85,7 +85,7 @@ namespace imgsr
         const Settings settings;
         const int len_vec;
     private:
-        void HandlePreparedImage(Mat low, Mat high);
+        void HandlePreparedImage(const Mat & in_low, const Mat & in_high);
 
         vector<Real> data_x;
         vector<Real> data_y;

@@ -1,12 +1,13 @@
 #include "stdafx.h"
 #include "image_reader.h"
-#include "utils.h"
+#include "utils_math.h"
 
 using namespace imgsr;
+using namespace utils;
 
 ImageReader::ImageReader(const vector<HandleFunc> & handlers_)
 {
-    handlers = utils::math::Select(handlers_, [](HandleFunc func) 
+    handlers = math::Select(handlers_, [](HandleFunc func) 
     {
         return func != nullptr;
     });

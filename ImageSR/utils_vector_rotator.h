@@ -1,5 +1,5 @@
 #pragma once
-#include "utils.h"
+#include "utils_math.h"
 
 namespace imgsr
 {
@@ -11,9 +11,18 @@ namespace imgsr
 
             VectorRotator(int pat_size_);
 
+            /// <summary>
+            /// Look up table 
+            /// </summary>
+            /// <param name="m">position on the vector with correct length</param>
+            /// <param name="rotate_times">rotate 90 degrees counterclockwise, can be positive and negative</param>
+            /// <returns>
+            /// the transformed position of the vector from the patch which is rotated 90 degrees 
+            /// counter clockwise.
+            /// </returns>
             inline int GetPos(int m, int rotate_times) const
             {
-                if (rotate_times < 0) rotate_times = 0;
+                if (rotate_times < 0) rotate_times = -rotate_times + 2;
                 rotate_times %= 4;
                 return table[m][rotate_times];
             }

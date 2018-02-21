@@ -1,6 +1,8 @@
 #include "stdafx.h"
 #include "tree_serializer.h"
 #include "utils_rapidjson.h"
+#include <rapidjson/filereadstream.h>
+#include <rapidjson/filewritestream.h>
 
 using namespace rapidjson;
 using namespace imgsr;
@@ -8,55 +10,76 @@ using namespace imgsr;
 const char key_tree[] = "tree";
 const char key_settings[] = "settings";
 
-void RapidJsonSerializer::Serialize(const DTree & tree, std::ostream & os)
+template<class OStreamType>
+void SaveDoc(const Document & doc, OStreamType & os)
+{
+    PrettyWriter<OStreamType> writer(os);
+    doc.Accept(writer);
+}
+
+void WriteDocToFile(const Document & doc, const string & file_path)
+{
+    FILE* fp = fopen(file_path.c_str(), "wb");
+    {
+        vector<char>write_buffer(65536);
+        FileWriteStream os(fp, write_buffer.data(), write_buffer.size());
+
+        SaveDoc(doc, os);
+    }
+    fclose(fp);
+}
+
+void ReadDocFromFile(const string & file_path, Document* doc)
+{
+    if (doc == nullptr) return;
+    FILE* fp = fopen(file_path.c_str(), "rb");
+    {
+        vector<char> read_buffer(65536);
+        FileReadStream is(fp, read_buffer.data(), read_buffer.size());
+
+        doc->ParseStream(is);
+    }
+    fclose(fp);
+}
+
+void RapidJsonSerializer::Serialize(const DTree & tree, const string & file_path)
 {
     Document doc;
     json::SerializeDTree(tree, doc.GetAllocator(), &doc);
-
-    OStreamWrapper osw(os);
-    json::SaveDoc(doc, osw);
+    WriteDocToFile(doc, file_path);
 }
 
-void RapidJsonSerializer::Deserialize(std::istream & is, DTree * tree)
+void RapidJsonSerializer::Deserialize(const string & file_path, DTree * tree)
 {
-    IStreamWrapper reader(is);
     Document doc;
-    doc.ParseStream(reader);
-
+    ReadDocFromFile(file_path, &doc);
     json::DeserializeDTree(doc, tree);
 }
 
-void RapidJsonSerializer::Serialize(const HDTrees & hdtrees, std::ostream & os)
+void RapidJsonSerializer::Serialize(const HDTrees & hdtrees, const string & file_path)
 {
     Document doc;
-
     json::SerializeHDTrees(hdtrees, doc.GetAllocator(), &doc);
-
-    OStreamWrapper osw(os);
-    json::SaveDoc(doc, osw);
+    WriteDocToFile(doc, file_path);
 }
 
-void RapidJsonSerializer::Deserialize(std::istream & is, HDTrees * hdtrees)
+void RapidJsonSerializer::Deserialize(const string & file_path, HDTrees * hdtrees)
 {
-    IStreamWrapper isw(is);
     Document doc;
-    doc.ParseStream(isw);
-
+    ReadDocFromFile(file_path, &doc);
     json::DeserializeHDTrees(doc, hdtrees);
 }
 
-void RapidJsonSerializer::Deserialize(const string & buf, DTree * tree)
+void RapidJsonSerializer::DeserializeString(const string & buf, DTree * tree)
 {
     Document doc;
     doc.Parse(buf.c_str());
-
     json::DeserializeDTree(doc, tree);
 }
 
-void RapidJsonSerializer::Deserialize(const string & buf, HDTrees * trees)
+void RapidJsonSerializer::DeserializeString(const string & buf, HDTrees * trees)
 {
     Document doc;
     doc.Parse(buf.c_str());
-
     json::DeserializeHDTrees(doc, trees);
 }

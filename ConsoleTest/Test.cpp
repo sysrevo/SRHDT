@@ -2,7 +2,9 @@
 #include "Test.h"
 #include "../ImageSR/tree.h"
 #include "../ImageSR/utils_logger.h"
-#include "../ImageSR/utils.h"
+#include "../ImageSR/utils_math.h"
+#include "../ImageSR/utils_filesys.h"
+#include "../ImageSR/utils_image.h"
 #include "../ImageSR/image_reader.h"
 #include "../ImageSR/tree_serializer.h"
 
@@ -16,15 +18,37 @@ using std::endl;
 using std::fstream;
 
 using namespace imgsr;
-using namespace imgsr::utils;
+using namespace utils;
 
 struct ImagesPair
 {
-    Ptr<FileImageReader> low;
-    Ptr<FileImageReader> high;
+    Ptr<ImageReader> low;
+    Ptr<ImageReader> high;
 };
 
-ImagesPair GetImages(const string & dir_path,
+void GetLowRes(Mat* img)
+{
+    Size size = img->size();
+    cv::resize(*img, *img, size / 2, 0, 0, cv::INTER_AREA);
+    cv::resize(*img, *img, size    , 0, 0, cv::INTER_CUBIC);
+}
+
+ImagesPair GetHighAndCreateLow(const string & dir_path,
+    ImageReader::HandleFunc func_high = nullptr)
+{
+    auto high_imgs = FileImageReader::Create(func_high);
+    high_imgs->Set(filesys::GetFilesInDir(dir_path));
+
+    auto low_imgs = HandlerImageReader::Create(GetLowRes);
+    low_imgs->SetInput(high_imgs);
+
+    ImagesPair res;
+    res.low = low_imgs;
+    res.high = high_imgs;
+    return res;
+}
+
+ImagesPair GetHighAndLow(const string & dir_path,
     ImageReader::HandleFunc func_high = nullptr,
     ImageReader::HandleFunc func_low = nullptr)
 {
@@ -37,11 +61,11 @@ ImagesPair GetImages(const string & dir_path,
     {
         return math::EndsWith(p, "Bicubic].bmp");
     };
-    Ptr<FileImageReader> high_imgs = FileImageReader::Create(func_high);
+    auto high_imgs = FileImageReader::Create(func_high);
     high_imgs->Set(math::Select(
         filesys::GetFilesInDir(dir_path), filter_high_res));
 
-    Ptr<FileImageReader> low_imgs = FileImageReader::Create(func_low);
+    auto low_imgs = FileImageReader::Create(func_low);
     low_imgs->Set(math::Select(
         filesys::GetFilesInDir(dir_path), filter_low_res));
 
@@ -57,9 +81,9 @@ void ClipOnePixel(Mat* img_ptr)
     img = Mat(img, cv::Rect(0, 0, img.cols - 1, img.rows - 1));
 }
 
-const string path_set5 = "D:\\test\\SRHDT\\SRHDT\\2xSet5-Bicubic";
-const string path_set14 = "D:\\test\\SRHDT\\SRHDT\\2xSet14-Bicubic";
-const string path_bsd100 = "D:\\test\\SRHDT\\SRHDT\\2xBSD100-Bicubic";
+const string path_set5 = "C:\\Users\\syste\\Downloads\\images\\set5";
+const string path_set14 = "C:\\Users\\syste\\Downloads\\images\\set14";
+const string path_bsd100 = "C:\\Users\\syste\\Downloads\\images\\bsd100";
 
 const string json_path = "D:\\test\\jsontest_hdt.json";
 
@@ -75,9 +99,9 @@ void Init()
 
     hdtrees = make_shared<HDTrees>(settings);
 
-    set5 = GetImages(path_set5);
-    set14 = GetImages(path_set14);
-    bsd100 = GetImages(path_bsd100, ClipOnePixel);
+    set5 = GetHighAndCreateLow(path_set5);
+    set14 = GetHighAndCreateLow(path_set14);
+    bsd100 = GetHighAndCreateLow(path_bsd100, ClipOnePixel);
 }
 
 void Learn()
@@ -85,22 +109,15 @@ void Learn()
     // learning
     hdtrees->Learn(bsd100.low, bsd100.high);
 
-    ofstream os(json_path);
     RapidJsonSerializer json;
-    json.Serialize(*hdtrees, os);
+    json.Serialize(*hdtrees, json_path);
 }
 
 void Test()
 {
     RapidJsonSerializer json;
     {
-        ifstream ifs(json_path);
-        string buf = utils::filesys::ReadFileString(ifs);
-        cout << "file " << json_path << " loaded" << endl;
-        ifs.close();
-        ifs.clear();
-
-        json.Deserialize(buf, hdtrees.get());
+        json.Deserialize(json_path, hdtrees.get());
         cout << "hdt trees loaded" << endl;
     }
 
@@ -114,9 +131,6 @@ void Test()
     {
         Mat high = imgs_high->Get(i);
         Mat low = imgs_low->Get(i);
-
-        high = image::GetGrayImage(high);
-        low = image::GetGrayImage(low);
 
         Mat out = hdtrees->PredictImage(low, high.size());
 

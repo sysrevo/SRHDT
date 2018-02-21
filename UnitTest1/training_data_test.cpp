@@ -2,11 +2,11 @@
 #include "CppUnitTest.h"
 
 #include "../ImageSR/training_data.h"
-#include "../ImageSR/utils.h"
+#include "../ImageSR/utils_image.h"
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 using namespace imgsr;
-using namespace imgsr::utils;
+using namespace utils;
 
 namespace UnitTest1
 {

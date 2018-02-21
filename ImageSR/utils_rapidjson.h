@@ -16,13 +16,6 @@ namespace imgsr
         typedef rapidjson::Document Document;
         typedef rapidjson::MemoryPoolAllocator<> AllocatorType;
 
-        template<class OStreamType>
-        void SaveDoc(const Document & doc, OStreamType & os)
-        {
-            PrettyWriter<OStreamType> writer(os);
-            doc.Accept(writer);
-        }
-
         // -------- Model -------------
         void SerializeModel(const EMat & model, AllocatorType & alloc, Value* model_arr);
         EMat DeserializeModel(const Value & val, int patch_size);

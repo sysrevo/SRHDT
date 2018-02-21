@@ -1,10 +1,11 @@
 #include "stdafx.h"
 #include "training_data.h"
-#include "utils.h"
+#include "utils_math.h"
+#include "utils_image.h"
 #include "utils_logger.h"
 
 using namespace imgsr;
-using namespace imgsr::utils;
+using namespace utils;
 
 void TrainingData::Split(const BinaryTest & test, TrainingData* left_ptr, TrainingData* right_ptr) const
 {
@@ -69,11 +70,9 @@ void TrainingData::Reserve(size_t n_patches)
 
 void TrainingData::PushBackPatch(const Mat & pat_low, const Mat & pat_high)
 {
-    assert(pat_low.cols == pat_high.cols);
-    assert(pat_low.rows == pat_high.rows);
+    assert(pat_low.size() == pat_high.size());
+    assert(pat_low.type() == CV_32F && pat_high.type() == CV_32F);
     assert(pat_low.cols * pat_low.rows == len_vec);
-    assert(pat_low.type() == CV_32F);
-    assert(pat_high.type() == CV_32F);
     size_t n_curr = Num();
     if (data_x.capacity() == data_x.size())
     {
@@ -84,18 +83,28 @@ void TrainingData::PushBackPatch(const Mat & pat_low, const Mat & pat_high)
     image::VectorizePatch(pat_high, &Y(n_curr));
 }
 
-void TrainingData::HandlePreparedImage(Mat low, Mat high)
+void TrainingData::HandlePreparedImage(const Mat & in_low, const Mat & in_high)
 {
-    assert(low.type() == CV_8U);
-    assert(high.type() == CV_8U);
-    assert(low.size() == high.size());
+    assert(in_high.type() == CV_8U && in_low.type() == CV_8U);
+    assert(in_low.size() == in_high.size());
 
-    Mat edge = image::GetEdgeMap(low, settings.canny_edge_threshold);
+    Mat edge = image::GetEdgeMap(in_low, settings.canny_edge_threshold);
 
-    low = image::GrayImage2FloatGrayMap(low);
-    high = image::GrayImage2FloatGrayMap(high);
+    Mat low = image::GrayImage2FloatGrayMap(in_low);
+    Mat high = image::GrayImage2FloatGrayMap(in_high);
 
-    image::ForeachPatch(low, settings.patch_size, settings.overlap,
+    auto pairs = image::GetPatchPairs(low, high, edge, settings.patch_size, settings.overlap);
+    size_t n_pairs = pairs.low.size();
+    
+    Resize(n_pairs);
+
+    for (size_t i = 0; i < n_pairs; ++i)
+    {
+        image::VectorizePatch(pairs.low[i],  &X(i));
+        image::VectorizePatch(pairs.high[i], &Y(i));
+    }
+
+    /*image::ForeachPatch(low, settings.patch_size, settings.overlap,
         [&edge, &high, this](
             const cv::Rect& rect, const Mat& pat_low)
     {
@@ -105,19 +114,23 @@ void TrainingData::HandlePreparedImage(Mat low, Mat high)
         {
             this->PushBackPatch(pat_low, pat_high);
         }
-    });
+    });*/
 }
 
-void TrainingData::PushBackImage(Mat low, Mat high)
+void TrainingData::PushBackImage(const Mat & in_low, const Mat & in_high)
 {
-    assert(!low.empty());
-    assert(!high.empty());
-    if (low.empty() || high.empty()) return;
-    high = image::GetGrayImage(high);
-    low = image::GetGrayImage(low);
+    assert(!in_low.empty() && !in_high.empty());
 
-    high = image::ResizeImage(high, high.size(), settings.patch_size, settings.overlap);
-    low = image::ResizeImage(low, high.size(), settings.patch_size, settings.overlap);
+    if (in_low.empty() || in_high.empty()) return;
+
+    Mat high = image::ResizeImage(high, high.size(), settings.patch_size, settings.overlap);
+    Mat low = image::ResizeImage(low, high.size(), settings.patch_size, settings.overlap);
+
+    if(high.type() == CV_8UC3)
+        high = image::SplitYCrcb(high).y;
+
+    if (low.type() == CV_8UC3)
+        low = image::SplitYCrcb(low).y;
 
     HandlePreparedImage(low, high);
 }

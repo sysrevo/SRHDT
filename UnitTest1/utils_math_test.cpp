@@ -1,6 +1,6 @@
 #include "stdafx.h"
 #include "CppUnitTest.h"
-#include "../ImageSR/utils.h"
+#include "../ImageSR/utils_image.h"
 #include "../ImageSR/utils_vector_rotator.h"
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 using namespace imgsr;
