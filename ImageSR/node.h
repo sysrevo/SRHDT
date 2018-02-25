@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "binary_test.h"
 #include "training_data.h"

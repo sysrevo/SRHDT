@@ -1,4 +1,4 @@
-#include "stdafx.h"
+﻿#include "stdafx.h"
 #include "training_data.h"
 #include "utils_math.h"
 #include "utils_image.h"

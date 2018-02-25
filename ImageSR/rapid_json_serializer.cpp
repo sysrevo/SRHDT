@@ -1,4 +1,4 @@
-#include "stdafx.h"
+﻿#include "stdafx.h"
 #include "tree_serializer.h"
 #include "utils_rapidjson.h"
 #include <rapidjson/filereadstream.h>

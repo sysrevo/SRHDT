@@ -1,4 +1,4 @@
-#include "stdafx.h"
+﻿#include "stdafx.h"
 #include "utils_vector_rotator.h"
 
 using namespace imgsr;

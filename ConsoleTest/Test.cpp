@@ -1,5 +1,4 @@
-#include "stdafx.h"
-#include "Test.h"
+﻿#include "Test.h"
 #include "../ImageSR/tree.h"
 #include "../ImageSR/utils_logger.h"
 #include "../ImageSR/utils_math.h"

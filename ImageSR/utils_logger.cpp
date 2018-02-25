@@ -1,4 +1,4 @@
-#include "stdafx.h"
+﻿#include "stdafx.h"
 #include "utils_logger.h"
 
 using namespace imgsr;

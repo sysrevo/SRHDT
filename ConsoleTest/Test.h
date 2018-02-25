@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 void Init();
 void Test();
