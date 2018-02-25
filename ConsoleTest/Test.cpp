@@ -29,15 +29,18 @@ struct ImagesPair
 void GetLowRes(Mat* img)
 {
     Size size = img->size();
-    cv::resize(*img, *img, size / 2, 0, 0, cv::INTER_AREA);
+    cv::resize(*img, *img, size / 2, 0, 0, cv::INTER_LINEAR);
     cv::resize(*img, *img, size    , 0, 0, cv::INTER_CUBIC);
 }
 
-ImagesPair GetHighAndCreateLow(const string & dir_path,
+ImagesPair GetHighAndCreateLow(const string & dir_path, int max_num = 0,
     ImageReader::HandleFunc func_high = nullptr)
 {
     auto high_imgs = FileImageReader::Create(func_high);
-    high_imgs->Set(filesys::GetFilesInDir(dir_path));
+
+    vector<string> files = filesys::GetFilesInDir(dir_path);
+    if (max_num > 0 && files.size() > max_num) files.resize(max_num);
+    high_imgs->Set(files);
 
     auto low_imgs = HandlerImageReader::Create(GetLowRes);
     low_imgs->SetInput(high_imgs);
@@ -81,33 +84,37 @@ void ClipOnePixel(Mat* img_ptr)
     img = Mat(img, cv::Rect(0, 0, img.cols - 1, img.rows - 1));
 }
 
-const string path_set5 = "C:\\Users\\syste\\Downloads\\images\\set5";
-const string path_set14 = "C:\\Users\\syste\\Downloads\\images\\set14";
-const string path_bsd100 = "C:\\Users\\syste\\Downloads\\images\\bsd100";
+const string path_set5 = "D:\\test\\images\\set5";
+const string path_set14 = "D:\\test\\images\\set14";
+const string path_bsd100 = "D:\\test\\images\\bsd100";
+const string path_training = "D:\\test\\images\\training_images";
+//const string path_bsd100 = "D:\\test\\SRHDT\\SRHDT\\2xBSD100-Bicubic\\hr";
 
 const string json_path = "D:\\test\\jsontest_hdt.json";
 
 Ptr<HDTrees> hdtrees = nullptr;
 ImagesPair set5, set14, bsd100;
+ImagesPair training;
 
 void Init()
 {
     Settings settings;
     settings.layers = 4;
     settings.fuse_option = Settings::Rotate;
-    settings.min_n_patches = 1500;
+    settings.min_n_patches = 1200;
 
     hdtrees = make_shared<HDTrees>(settings);
 
     set5 = GetHighAndCreateLow(path_set5);
     set14 = GetHighAndCreateLow(path_set14);
-    bsd100 = GetHighAndCreateLow(path_bsd100, ClipOnePixel);
+    bsd100 = GetHighAndCreateLow(path_bsd100);
+    training = GetHighAndCreateLow(path_training, 200);
 }
 
 void Learn()
 {
     // learning
-    hdtrees->Learn(bsd100.low, bsd100.high);
+    hdtrees->Learn(training.low, training.high);
 
     RapidJsonSerializer json;
     json.Serialize(*hdtrees, json_path);

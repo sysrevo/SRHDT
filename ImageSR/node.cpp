@@ -67,3 +67,20 @@ int DTNode::GetNumNodes() const
     else 
         return 1 + left->GetNumNodes() + right->GetNumNodes();
 }
+
+void DTNode::CreateLeft(const Ptr<TrainingData>& samples)
+{
+    left = nullptr;
+    left = std::make_unique<DTNode>(samples);
+}
+
+void DTNode::CreateRight(const Ptr<TrainingData>& samples)
+{
+    right = nullptr;
+    right = std::make_unique<DTNode>(samples);
+}
+
+void DTNode::ClearSamples()
+{
+    samples = nullptr;
+}

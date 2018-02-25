@@ -19,7 +19,9 @@ void SaveDoc(const Document & doc, OStreamType & os)
 
 void WriteDocToFile(const Document & doc, const string & file_path)
 {
-    FILE* fp = fopen(file_path.c_str(), "wb");
+    FILE* fp = nullptr;
+    fopen_s(&fp, file_path.c_str(), "wb");
+    if(fp)
     {
         vector<char>write_buffer(65536);
         FileWriteStream os(fp, write_buffer.data(), write_buffer.size());
@@ -32,7 +34,9 @@ void WriteDocToFile(const Document & doc, const string & file_path)
 void ReadDocFromFile(const string & file_path, Document* doc)
 {
     if (doc == nullptr) return;
-    FILE* fp = fopen(file_path.c_str(), "rb");
+    FILE* fp = nullptr;
+    fopen_s(&fp, file_path.c_str(), "rb");
+    if(fp)
     {
         vector<char> read_buffer(65536);
         FileReadStream is(fp, read_buffer.data(), read_buffer.size());

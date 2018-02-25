@@ -41,40 +41,36 @@ void DTree::Learn(const Ptr<TrainingData> & total_samples)
 
         // calculate regression model for this node
 
-        CalculationResult res = DoComplexCalculate(
-            node->samples->RowMatX(),
-            node->samples->RowMatY(),
+        CalculationResult node_calc_res = DoComplexCalculate(
+            node->GetSamples()->RowMatX(),
+            node->GetSamples()->RowMatY(),
             settings.lamda);
 
-        size_t numPairs = node->samples->Num();
+        size_t numPairs = node->GetSamples()->Num();
 
         if (numPairs < 2 * settings.min_n_patches)
         {
-            node->BecomeLeafNode(res.c);
+            node->BecomeLeafNode(node_calc_res.c);
         }
         else
         {
             MyLogger::debug << " generating tests... ";
-            BinaryTestResult result =
-                GenerateTestWithMaxErrorReduction(res.fitting_error, *node->samples, rand());
-            if (result.error_reduction > 0)
+            BinaryTestResult bin_res =
+                GenerateTestWithMaxErrorReduction(node_calc_res.fitting_error, *node->GetSamples(), rand());
+            if (bin_res.error_reduction > 0 && bin_res.left && bin_res.right)
             {
                 // this node is a non-leaf node
-                Ptr<TrainingData> left = TrainingData::Create(settings);
-                Ptr<TrainingData> right = TrainingData::Create(settings);
-                node->samples->Split(result.test, left.get(), right.get());
-
-                node->BecomeNonLeafNode(left, right, result.test);
-                unprocessed.push(node->left.get());
-                unprocessed.push(node->right.get());
+                node->BecomeNonLeafNode(bin_res.left, bin_res.right, bin_res.test);
+                unprocessed.push(node->GetLeft());
+                unprocessed.push(node->GetRight());
             }
             else
             {
                 // this node is a leaf node
-                node->BecomeLeafNode(res.c);
+                node->BecomeLeafNode(node_calc_res.c);
             }
         }
-        node->samples->ClearAndRelease();
+        node->GetSamples()->ClearAndRelease();
         node = nullptr;
         MyLogger::debug << " complete " << endl;
     }
@@ -136,6 +132,10 @@ void HDTrees::Learn(const Ptr<ImageReader> & low_reader, const Ptr<ImageReader> 
         high_imgs->Set(buf_high);
 
         trees.push_back(DTree(settings));
+
+        MyLogger::debug << "Layer " << layer << " training begins" << endl
+            << "data size: " << low_imgs->Size() << endl;
+
         trees.back().Learn(low_imgs, high_imgs);
 
         MyLogger::debug << "Layer " << layer << " completed" << endl;

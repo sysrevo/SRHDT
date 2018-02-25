@@ -16,12 +16,8 @@ namespace imgsr
     class DTree
     {
     public:
-        /// <summary>
-        /// the root node of the tree.
-        /// read-only please.
-        /// </summary>
-        UPtr<DTNode> root = nullptr;
 
+        inline DTNode* GetRoot() const { return root.get(); }
         /// <summary>
         /// settings for the system.
         /// modified this before you do anything else.
@@ -73,6 +69,12 @@ namespace imgsr
 
     private:
         void Learn(const Ptr<TrainingData> & total_samples);
+
+        /// <summary>
+        /// the root node of the tree.
+        /// read-only please.
+        /// </summary>
+        UPtr<DTNode> root = nullptr;
     };
 
     class HDTrees

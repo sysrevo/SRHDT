@@ -9,14 +9,11 @@ namespace imgsr
     {
     public:
         bool is_leaf;
-        Ptr<TrainingData> samples;
-        UPtr<DTNode> left = nullptr;
-        UPtr<DTNode> right = nullptr;
         BinaryTest test;
         EMat c;
 
         inline DTNode(const Ptr<TrainingData> & samples_ptr = nullptr)
-            : samples(std::move(samples_ptr)) { }
+            : samples(samples_ptr) { }
 
         void BecomeLeafNode(const EMat & c);
         void BecomeNonLeafNode(const Ptr<TrainingData> & left_samples, const Ptr<TrainingData> & right_samples, const BinaryTest& test);
@@ -25,5 +22,16 @@ namespace imgsr
         void PrintBrief(std::ostream & os, int stack = 0) const;
         int GetNumLeafNodes() const;
         int GetNumNodes() const;
+
+        inline DTNode* GetLeft() const { return left.get(); }
+        inline DTNode* GetRight() const { return right.get(); }
+        void CreateLeft(const Ptr<TrainingData> & samples = nullptr);
+        void CreateRight(const Ptr<TrainingData> & samples = nullptr);
+        void ClearSamples();
+        TrainingData* GetSamples() const { return samples.get(); }
+    private:
+        Ptr<TrainingData> samples;
+        UPtr<DTNode> left = nullptr;
+        UPtr<DTNode> right = nullptr;
     };
 }

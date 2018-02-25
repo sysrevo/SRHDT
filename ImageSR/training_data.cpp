@@ -95,13 +95,10 @@ void TrainingData::HandlePreparedImage(const Mat & in_low, const Mat & in_high)
 
     auto pairs = image::GetPatchPairs(low, high, edge, settings.patch_size, settings.overlap);
     size_t n_pairs = pairs.low.size();
-    
-    Resize(n_pairs);
 
     for (size_t i = 0; i < n_pairs; ++i)
     {
-        image::VectorizePatch(pairs.low[i],  &X(i));
-        image::VectorizePatch(pairs.high[i], &Y(i));
+        PushBackPatch(pairs.low[i], pairs.high[i]);
     }
 
     /*image::ForeachPatch(low, settings.patch_size, settings.overlap,
@@ -123,8 +120,8 @@ void TrainingData::PushBackImage(const Mat & in_low, const Mat & in_high)
 
     if (in_low.empty() || in_high.empty()) return;
 
-    Mat high = image::ResizeImage(high, high.size(), settings.patch_size, settings.overlap);
-    Mat low = image::ResizeImage(low, high.size(), settings.patch_size, settings.overlap);
+    Mat high = image::ResizeImage(in_high, in_high.size(), settings.patch_size, settings.overlap);
+    Mat low = image::ResizeImage(in_low, high.size(), settings.patch_size, settings.overlap);
 
     if(high.type() == CV_8UC3)
         high = image::SplitYCrcb(high).y;
@@ -169,19 +166,12 @@ void TrainingData::PushBackImages(const Ptr<ImageReader> & low_imgs,
     if (low_imgs->Empty()) return;
     if (n_threads < 1) n_threads = 1;
 
-    vector<TrainingData> buf_threads;
-    buf_threads.resize(low_imgs->Size(), TrainingData(settings));
-
     size_t n_imgs = low_imgs->Size();
 
-    #pragma omp parallel for
     for (int i = 0; i < n_imgs; ++i)
     {
-        int tid = omp_get_thread_num();
-        buf_threads[tid].PushBackImage(low_imgs->Get(i), high_imgs->Get(i));
+        PushBackImage(low_imgs->Get(i), high_imgs->Get(i));
     }
-
-    Append(buf_threads);
 }
 
 void TrainingData::ShrinkToFit()

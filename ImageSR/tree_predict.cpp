@@ -55,59 +55,20 @@ Mat DTree::PredictImage(const Mat & in_low, cv::Size size) const
     
     for (int r = 0; r < count_map.rows; ++r)
     {
-        float* ptr = count_map.ptr<float>(r);
+        float* ptr_count = count_map.ptr<float>(r);
+        float* ptr_gray = gray.ptr<float>(r);
         for (int c = 0; c < count_map.cols; ++c)
-            if (ptr[c] == 0) ptr[c] = 1;
+        {
+            if (ptr_count[c] != 0)
+                ptr_gray[c] /= ptr_count[c];
+        }
     }
-
-    gray /= count_map;
 
     imgs.y = image::FloatGrayMap2GrayImage(gray);
     Mat res = image::Merge(imgs);
     return res;
     
-    //int n_threads = 4;
-    //vector<Mat> tbuf_res(n_threads);
-    //vector<Mat> tbuf_count(n_threads);
-
-    //for (Mat & img : tbuf_res)
-    //    img = Mat(low.size(), low.type(), Scalar(0));
-
-    //for (Mat & img : tbuf_count)
-    //    img = Mat(low.size(), CV_8U, Scalar(0));
-
-    //rotator = VectorRotator(settings.patch_size);
-
-    //image::ForeachPatchParallel(low, settings.patch_size, settings.overlap,
-    //[&edge, &tbuf_res, &tbuf_count, this](const cv::Rect& rect, const Mat& pat_in, int tid)
-    //{
-    //    Mat pat_res;
-    //    Mat pat_edge = edge(rect);
-    //    if (cv::countNonZero(pat_edge) > 0)
-    //    {
-    //        //predict this patch
-    //        pat_res = this->PredictPatch(pat_in);
-    //    }
-    //    else
-    //    {
-    //        pat_res = Mat(pat_in);
-    //    }
-    //    tbuf_res[tid](rect) += pat_res;
-    //    tbuf_count[tid](rect) += 1;
-    //}, n_threads);
-
-    //Mat result(low.size(), low.type(), Scalar(0));
-    //for (const Mat & img : tbuf_res)
-    //    result += img;
-
-    //Mat count_map(result.size(), CV_8U, Scalar(0));
-    //for (const Mat & img : tbuf_count)
-    //    count_map += img;
-
-    //// divide to get the average color of each pixel
-    //// some overlapped pixel will have 9 values
-    //count_map.convertTo(count_map, CV_32F);
-    //result /= count_map;
+    
 
     //result = image::FloatGrayMap2GrayImage(result);
     //return result;

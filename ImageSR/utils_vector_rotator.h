@@ -60,7 +60,7 @@ namespace imgsr
                     for (int r = 0; r < len_vec; ++r)
                     {
                         int fr = GetPos(r, times);
-                        res(r, c) = in(fr, fc);
+                        res(fr, fc) = in(r, c);
                     }
                 }
             }

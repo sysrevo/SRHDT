@@ -145,9 +145,8 @@ void json::SerializeBinaryTest(const BinaryTest & test, AllocatorType & allocato
 }
 
 // ------------------------ Node -----------------
-UPtr<DTNode> json::DeserializeNode(const Value & val, int patch_size)
+void json::DeserializeNode(const Value & val, int patch_size, DTNode* node)
 {
-    UPtr<DTNode> node = UPtr<DTNode>(new DTNode());
     node->is_leaf = val[key_is_leaf].GetBool();
     if (node->is_leaf)
     {
@@ -156,10 +155,11 @@ UPtr<DTNode> json::DeserializeNode(const Value & val, int patch_size)
     else
     {
         node->test = DeserializeBinaryTest(val[key_binary_test]);
-        node->left = std::move(DeserializeNode(val[key_left], patch_size));
-        node->right = std::move(DeserializeNode(val[key_right], patch_size));
+        node->CreateLeft();
+        node->CreateRight();
+        DeserializeNode(val[key_left], patch_size, node->GetLeft());
+        DeserializeNode(val[key_right], patch_size, node->GetRight());
     }
-    return node;
 }
 
 void json::SerializeNode(DTNode* node, AllocatorType & allocator, Value* node_obj)
@@ -179,8 +179,8 @@ void json::SerializeNode(DTNode* node, AllocatorType & allocator, Value* node_ob
         Value left_node_val;
         Value right_node_val;
         Value binary_test_val;
-        SerializeNode(node->left.get(), allocator, &left_node_val);
-        SerializeNode(node->right.get(), allocator, &right_node_val);
+        SerializeNode(node->GetLeft(), allocator, &left_node_val);
+        SerializeNode(node->GetRight(), allocator, &right_node_val);
         SerializeBinaryTest(node->test, allocator, &binary_test_val);
 
         node_obj->AddMember(key_binary_test, binary_test_val.Move(), allocator);
@@ -195,7 +195,7 @@ void json::SerializeDTree(const DTree & tree, AllocatorType & allocator, Value* 
     tree_obj->SetObject();
 
     Value root_obj;
-    SerializeNode(tree.root.get(), allocator, &root_obj);
+    SerializeNode(tree.GetRoot(), allocator, &root_obj);
 
     //Value sets_obj;
     //SerializeSettings(tree.settings, allocator, &sets_obj);
@@ -214,8 +214,7 @@ void json::DeserializeDTree(const Value & tree_obj, DTree* tree_out_ptr)
     assert(tree_out_ptr != nullptr);
     DTree & tree = *tree_out_ptr;
 
-    //tree.settings = json::DeserializeSettings(tree_obj[key_settings]);
-    tree.root = std::move(DeserializeNode(tree_obj[key_root], tree.settings.patch_size));
+    DeserializeNode(tree_obj[key_root], tree.settings.patch_size, tree.GetRoot());
 
     assert(tree.GetNumLeafNodes() == tree_obj[key_n_leaf].GetInt());
     assert(tree.GetNumNodes() == tree_obj[key_n_node].GetInt());

@@ -67,6 +67,8 @@ namespace imgsr
         {
             Real error_reduction = 0;
             BinaryTest test;
+            Ptr<TrainingData> left = nullptr;
+            Ptr<TrainingData> right = nullptr;
         };
 
         template<class HandleFunc>
@@ -133,6 +135,8 @@ namespace imgsr
                                 {
                                     res.test = test;
                                     res.error_reduction = error_reduction;
+                                    res.left = bufs_left[i];
+                                    res.right = bufs_right[i];
                                 }
                             }
                         }

@@ -26,7 +26,7 @@ namespace imgsr
 
         // -------- Node -------------
         void SerializeNode(DTNode * node, AllocatorType & alloc, Value* node_obj);
-        UPtr<DTNode> DeserializeNode(const Value & val, int patch_size);
+        void DeserializeNode(const Value & val, int patch_size, DTNode* node);
 
         // -------- Settings -------------
         void SerializeSettings(const Settings & sets, AllocatorType & alloc, Value* sets_obj);

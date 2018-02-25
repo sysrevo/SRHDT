@@ -6,9 +6,9 @@ namespace imgsr
     struct BinaryTest
     {
         // two positions on the vectorized LR patch, which is patch.x
-        int p1;
-        int p2;
-        double r; // threshold value
+        int p1 = 0;
+        int p2 = 0;
+        double r = 0; // threshold value
 
         template<class InputPatchType>
         bool IsOnLeft(const InputPatchType& patch) const
@@ -18,7 +18,5 @@ namespace imgsr
             if (x1 < x2 + r) return false;
             return true;
         }
-
-        BinaryTest() { memset(this, 0, sizeof(*this)); }
     };
 }

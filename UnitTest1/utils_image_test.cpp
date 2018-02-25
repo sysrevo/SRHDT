@@ -46,11 +46,11 @@ public:
         test(res, 2, 1);
     }
 
-    TEST_METHOD(TestPrepareGrayImage)
+    TEST_METHOD(TestImage)
     {
         using namespace cv;
         Mat img = cv::imread("..\\..\\UnitTest1\\test_256_4.png", CV_LOAD_IMAGE_UNCHANGED);
-        img = image::SplitYCrcb(img);
+        img = image::SplitYCrcb(img).y;
         Assert::AreEqual(img.type(), CV_8U);
 
         image::ForeachPatch(img, 6, 4, [&img](const Rect & rect, Mat & patch)
@@ -66,7 +66,7 @@ public:
         using namespace cv;
         Mat img = cv::imread("..\\..\\UnitTest1\\test_256_4.png", CV_LOAD_IMAGE_UNCHANGED);
         img = image::ResizeImage(img, img.size(), 6, 4);
-        img = image::SplitYCrcb(img);
+        img = image::SplitYCrcb(img).y;
         img = image::GrayImage2FloatGrayMap(img);
 
         image::ForeachPatch(img, 6, 4, [&img](const Rect & rect, Mat & patch)
@@ -94,7 +94,7 @@ public:
         using namespace cv;
         Mat img = cv::imread("..\\..\\UnitTest1\\test_256_4.png", CV_LOAD_IMAGE_UNCHANGED);
         img = image::ResizeImage(img, img.size(), 6, 4);
-        img = image::SplitYCrcb(img);
+        img = image::SplitYCrcb(img).y;
         img = image::GrayImage2FloatGrayMap(img);
 
         image::ForeachPatch(img, 6, 4, [&img](const Rect & rect, Mat & patch)
