@@ -163,6 +163,7 @@
     <ClInclude Include="image_reader.h" />
     <ClInclude Include="node.h" />
     <ClInclude Include="settings.h" />
+    <ClInclude Include="status_struct.h" />
     <ClInclude Include="tree_learn_helper.h" />
     <ClInclude Include="tree_serializer.h" />
     <ClInclude Include="utils_image.h" />

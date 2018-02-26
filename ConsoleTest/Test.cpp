@@ -1,4 +1,6 @@
-﻿#include "Test.h"
+﻿#include <thread>
+#include <chrono>
+#include "Test.h"
 #include "../ImageSR/tree.h"
 #include "../ImageSR/utils_logger.h"
 #include "../ImageSR/utils_math.h"
@@ -91,6 +93,34 @@ void Learn()
     json.Serialize(*hdtrees, json_path);
 }
 
+Mat MonitorProcessTest(const Mat & low, cv::Size size)
+{
+    using std::thread;
+    Mat out;
+
+    bool is_finish = false;
+    HDTreesPredictStatus status;
+
+    thread t([&is_finish, &low, &size, &out, &status]()
+    {
+        out = hdtrees->PredictImage(low, size, &status);
+        is_finish = true;
+    });
+    
+    cout << endl;
+    while (!is_finish)
+    {
+        std::this_thread::sleep_for(std::chrono::milliseconds(30));
+        cout << "layer: " << status.layer << ", num: " << status.tree_status.n_curr_pats << endl;;
+    }
+
+    cout << endl;
+
+    t.join();
+
+    return out;
+}
+
 void Test()
 {
     RapidJsonSerializer json;
@@ -110,7 +140,7 @@ void Test()
         Mat high = imgs_high->Get(i);
         Mat low = imgs_low->Get(i);
 
-        Mat out = hdtrees->PredictImage(low, high.size());
+        Mat out = MonitorProcessTest(low, high.size());
 
         Mat h0;
         cv::resize(low, h0, high.size(), 0, 0, cv::INTER_CUBIC);

@@ -9,38 +9,50 @@ using namespace imgsr;
 using namespace imgsr::utils;
 using namespace imgsr::treelearnhelper;
 
-void imgsr::DTree::CreateRoot()
+void DTree::CreateRoot()
 {
     root = std::make_unique<DTNode>();
 }
 
 void DTree::Learn(
-    const Ptr<ImageReader> & low_reader, 
-    const Ptr<ImageReader> & high_reader)
+    const Ptr<ImageReader> & low_reader,
+    const Ptr<ImageReader> & high_reader, 
+    DTreeTraingingStatus* status)
 {
     if (low_reader->Empty()) return;
 
     Ptr<TrainingData> total_samples = TrainingData::Create(settings);
     total_samples->PushBackImages(low_reader, high_reader);
 
-    Learn(total_samples);
+    Learn(total_samples, status);
 }
 
-void DTree::Learn(const Ptr<TrainingData> & total_samples)
+void DTree::Learn(
+    const Ptr<TrainingData> & total_samples, 
+    DTreeTraingingStatus* status)
 {
     using std::endl;
+
     if (total_samples->Num() == 0) return;
-    MyLogger::debug << "Tree learning... num:" << total_samples->Num() << endl;
+    // recording status
+
 
     DTNode* node = new DTNode(total_samples);
     root.reset(node);
     // iterate all unprocessed node, starting from the first
     queue<DTNode*> unprocessed;
     unprocessed.push(node);
-    int count = 0;
+
+    if (status)
+    {
+        status->n_samples = total_samples->Num();
+        status->n_leaf = 0;
+        status->n_nonleaf = 0;
+        status->n_curr_node = 0;
+    }
+
     while (!unprocessed.empty())
     {
-        MyLogger::debug << "Processing node " << count++ << " ..... ";
         DTNode* node = unprocessed.front();
         unprocessed.pop();
 
@@ -56,36 +68,39 @@ void DTree::Learn(const Ptr<TrainingData> & total_samples)
         if (numPairs < 2 * settings.min_n_patches)
         {
             node->BecomeLeafNode(node_calc_res.c);
+            if(status)
+                ++(status->n_leaf);
         }
         else
         {
-            MyLogger::debug << " generating tests... ";
             BinaryTestResult bin_res =
-                GenerateTestWithMaxErrorReduction(node_calc_res.fitting_error, *node->GetSamples(), rand());
+                GenerateTestWithMaxErrorReduction(node_calc_res.fitting_error, *node->GetSamples(), rand(), status);
             if (bin_res.error_reduction > 0)
             {
                 node->BecomeNonLeafNode(bin_res.left, bin_res.right, bin_res.test);
                 unprocessed.push(node->GetLeft());
                 unprocessed.push(node->GetRight());
+
+                if(status) ++(status->n_nonleaf);
             }
             else
             {
                 // this node is a leaf node
                 node->BecomeLeafNode(node_calc_res.c);
+
+                if(status) ++(status->n_leaf);
             }
         }
         node->GetSamples()->ClearAndRelease();
         node = nullptr;
-        MyLogger::debug << " complete " << endl;
+        if(status)  ++status->n_curr_node += 1;
     }
 }
 
-void DTree::PrintBrief(std::ostream & os) const
-{
-    root->PrintBrief(os);
-}
-
-void HDTrees::Learn(const Ptr<ImageReader> & low_reader, const Ptr<ImageReader> & high_reader)
+void HDTrees::Learn(
+    const Ptr<ImageReader> & low_reader, 
+    const Ptr<ImageReader> & high_reader, 
+    HDTreesTrainingStatus* status)
 {
     assert(low_reader->Size() == high_reader->Size());
     assert(!low_reader->Empty());
@@ -105,7 +120,8 @@ void HDTrees::Learn(const Ptr<ImageReader> & low_reader, const Ptr<ImageReader> 
 
     for (int layer = 0; layer < settings.layers; ++layer)
     {
-        MyLogger::debug << "Processing layer " << layer << " ..." << endl;
+        if(status) status->curr_layer = layer;
+        //MyLogger::debug << "Processing layer " << layer << " ..." << endl;
 
         int start = layer * n_per_layer;
         int end = start + n_per_layer;

@@ -1,18 +1,9 @@
 ﻿#pragma once
-
+#include "status_struct.h"
 #include "node.h"
 
 namespace imgsr
 {
-    class TreeJsonException : std::exception
-    {
-    public:
-        TreeJsonException(const char* msg_) :msg(msg_) {}
-        const char* what() const { return msg.data(); }
-    private:
-        string msg;
-    };
-
     class DTree
     {
     public:
@@ -33,7 +24,8 @@ namespace imgsr
         /// </summary>
         /// <param name="low_reader"></param>
         /// <param name="high_reader"></param>
-        void Learn(const Ptr<ImageReader> & low_reader, const Ptr<ImageReader> & high_reader);
+        void Learn(const Ptr<ImageReader> & low_reader, const Ptr<ImageReader> & high_reader, 
+            DTreeTraingingStatus* status = nullptr);
 
         /// <summary>
         /// Predict an image. Expected width and height must be at least the width and height of image 'low'.
@@ -41,7 +33,8 @@ namespace imgsr
         /// <param name="in_low">The input image. Please check if this image is not empty and only with type CV_8U first.</param>
         /// <param name="size">The width of high-res output image.</param>
         /// <returns>The high-res image predicted by this decision tree</returns>
-        Mat PredictImage(const Mat & in_low, cv::Size size) const;
+        Mat PredictImage(const Mat & in_low, cv::Size size, 
+            DTreePredictStatus* status = nullptr) const;
 
         /// <summary>
         /// Predict an input patch. Please modified this->settings to match requirements before calling this function.
@@ -49,8 +42,6 @@ namespace imgsr
         /// </summary>
         /// <param name="in_patch">Input patch for the prediction. Cols and rows must be the same as settings.patchSize.</param>
         Mat PredictPatch(const Mat & in_patch) const;
-
-        void PrintBrief(std::ostream & os) const;
 
         inline int GetNumNodes() const
         {
@@ -63,9 +54,9 @@ namespace imgsr
         }
 
     private:
-        void Learn(const Ptr<TrainingData> & total_samples);
-
         UPtr<DTNode> root = nullptr;
+        void Learn(const Ptr<TrainingData> & total_samples, 
+            DTreeTraingingStatus* status = nullptr);
     };
 
     class HDTrees
@@ -77,8 +68,10 @@ namespace imgsr
         inline HDTrees(const Settings & settings_):
             settings(settings_) {}
 
-        void Learn(const Ptr<ImageReader> & low_reader, const Ptr<ImageReader> & high_reader);
+        void Learn(const Ptr<ImageReader> & low_reader, const Ptr<ImageReader> & high_reader,
+            HDTreesTrainingStatus* status = nullptr);
 
-        Mat PredictImage(const Mat & img, cv::Size expected_size) const;
+        Mat PredictImage(const Mat & img, cv::Size expected_size
+            , HDTreesPredictStatus* status = nullptr) const;
     };
 }

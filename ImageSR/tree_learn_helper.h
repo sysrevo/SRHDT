@@ -73,7 +73,7 @@ namespace imgsr
 
         template<class HandleFunc>
         BinaryTestResult ForeachRandomBinaryTest(
-            int rand_seed, const Settings & sets, HandleFunc test_func, int n_threads = 4)
+            int rand_seed, const Settings & sets, HandleFunc test_func, DTreeTraingingStatus* status, int n_threads = 4)
         {
             srand(rand_seed);
             int len_vec = sets.GetVectorLength();
@@ -134,6 +134,7 @@ namespace imgsr
                             #pragma omp critical
                             {
                                 ++n_test_gen;
+                                if (status) status->n_test_gen = n_test_gen;
                                 if (error_reduction > res.error_reduction)
                                 {
                                     res.test = test;
@@ -151,7 +152,7 @@ namespace imgsr
         }
 
         BinaryTestResult GenerateTestWithMaxErrorReduction(
-            Real err, const TrainingData & samples, int seed)
+            Real err, const TrainingData & samples, int seed, DTreeTraingingStatus* status)
         {
             auto func = [&samples, err](const BinaryTest & test,
                 const Ptr<TrainingData> & buf_left, const Ptr<TrainingData> & buf_right)
@@ -187,7 +188,7 @@ namespace imgsr
             };
 
             BinaryTestResult res = ForeachRandomBinaryTest(
-                seed, samples.settings, func);
+                seed, samples.settings, func, status);
             return res;
         }
     } // tree_learn_helper

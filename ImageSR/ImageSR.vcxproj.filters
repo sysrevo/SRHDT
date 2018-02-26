@@ -74,6 +74,9 @@
     <ClInclude Include="utils_filesys.h">
       <Filter>头文件\system\utils</Filter>
     </ClInclude>
+    <ClInclude Include="status_struct.h">
+      <Filter>头文件\system</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">

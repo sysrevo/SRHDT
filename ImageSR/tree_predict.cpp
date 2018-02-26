@@ -8,8 +8,15 @@ using namespace imgsr::utils;
 
 utils::VectorRotator rotator(1);
 
-Mat DTree::PredictImage(const Mat & in_low, cv::Size size) const
+Mat DTree::PredictImage(const Mat & in_low, cv::Size size,
+    DTreePredictStatus* status) const
 {
+    if (status)
+    {
+        status->n_curr_pats = 0;
+        status->n_pats = 0;
+    }
+
     rotator = VectorRotator(settings.patch_size);
     using namespace cv;
 
@@ -30,6 +37,8 @@ Mat DTree::PredictImage(const Mat & in_low, cv::Size size) const
     auto pats = image::GetPatches(vector<Mat>({ gray, gray_res, count_map }), edge, settings.patch_size, settings.overlap);
     size_t n_pats = pats[0].size();
 
+    if (status) status->n_pats = n_pats;
+
     vector<Mat>& pats_in = pats[0];
     vector<Mat>& pats_out = pats[1];
     vector<Mat>& pats_count = pats[2];
@@ -45,6 +54,10 @@ Mat DTree::PredictImage(const Mat & in_low, cv::Size size) const
     for (int i = 0; i < n_pats; ++i)
     {
         res_buf[i] = PredictPatch(pats_in[i]);
+        #pragma omp critical
+        {
+            if(status) ++(status->n_curr_pats);
+        }
     }
 
     // try to merge result from predicted patches
@@ -114,15 +127,19 @@ Mat DTree::PredictPatch(const Mat & pat_in) const
     }
     ERowVec x = image::VectorizePatch(pat_in);
     ERowVec res = x * model / n_models;
-    return image::DevectorizePatch(res, settings.patch_size);;
+    return image::DevectorizePatch(res, settings.patch_size);
 }
 
-Mat HDTrees::PredictImage(const Mat & img, cv::Size size) const
+Mat HDTrees::PredictImage(const Mat & img, cv::Size size, 
+    HDTreesPredictStatus* status) const
 {
+    if(status) *status = HDTreesPredictStatus();
     Mat out_img = img;
-    for (const auto & tree : trees)
+    for (int layer = 0; layer < trees.size(); ++layer)
     {
-        out_img = tree.PredictImage(out_img, size);
+        if(status) status->layer = layer;
+        DTreePredictStatus* tree_status = status ? &status->tree_status : nullptr;
+        out_img = trees[layer].PredictImage(out_img, size, tree_status);
     }
     return out_img;
 }
