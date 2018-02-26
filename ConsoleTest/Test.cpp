@@ -29,7 +29,6 @@ void GetLowRes(Mat* img)
 {
     Size size = img->size();
     cv::resize(*img, *img, size / 2, 0, 0, cv::INTER_LINEAR);
-    cv::resize(*img, *img, size    , 0, 0, cv::INTER_CUBIC);
 }
 
 ImagesPair GetHighAndCreateLow(const string & dir_path, int max_num = 0,
@@ -43,33 +42,6 @@ ImagesPair GetHighAndCreateLow(const string & dir_path, int max_num = 0,
 
     auto low_imgs = HandlerImageReader::Create(GetLowRes);
     low_imgs->SetInput(high_imgs);
-
-    ImagesPair res;
-    res.low = low_imgs;
-    res.high = high_imgs;
-    return res;
-}
-
-ImagesPair GetHighAndLow(const string & dir_path,
-    ImageReader::HandleFunc func_high = nullptr,
-    ImageReader::HandleFunc func_low = nullptr)
-{
-    auto filter_high_res = [](const string & p)
-    {
-        return math::EndsWith(p, "Original].bmp");
-    };
-
-    auto filter_low_res = [](const string & p)
-    {
-        return math::EndsWith(p, "Bicubic].bmp");
-    };
-    auto high_imgs = FileImageReader::Create(func_high);
-    high_imgs->Set(math::Select(
-        filesys::GetFilesInDir(dir_path), filter_high_res));
-
-    auto low_imgs = FileImageReader::Create(func_low);
-    low_imgs->Set(math::Select(
-        filesys::GetFilesInDir(dir_path), filter_low_res));
 
     ImagesPair res;
     res.low = low_imgs;
@@ -140,7 +112,9 @@ void Test()
 
         Mat out = hdtrees->PredictImage(low, high.size());
 
-        cout << "PSNR: " << image::GetPSNR(out, high) - image::GetPSNR(low, high) << endl;
+        Mat h0;
+        cv::resize(low, h0, high.size(), 0, 0, cv::INTER_CUBIC);
+        cout << "PSNR: " << image::GetPSNR(out, high) - image::GetPSNR(h0, high) << endl;
         cv::imshow("low", low);
         cv::imshow("out", out);
         cv::imshow("high", high);

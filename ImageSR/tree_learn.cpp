@@ -9,6 +9,11 @@ using namespace imgsr;
 using namespace imgsr::utils;
 using namespace imgsr::treelearnhelper;
 
+void imgsr::DTree::CreateRoot()
+{
+    root = std::make_unique<DTNode>();
+}
+
 void DTree::Learn(
     const Ptr<ImageReader> & low_reader, 
     const Ptr<ImageReader> & high_reader)
@@ -57,9 +62,8 @@ void DTree::Learn(const Ptr<TrainingData> & total_samples)
             MyLogger::debug << " generating tests... ";
             BinaryTestResult bin_res =
                 GenerateTestWithMaxErrorReduction(node_calc_res.fitting_error, *node->GetSamples(), rand());
-            if (bin_res.error_reduction > 0 && bin_res.left && bin_res.right)
+            if (bin_res.error_reduction > 0)
             {
-                // this node is a non-leaf node
                 node->BecomeNonLeafNode(bin_res.left, bin_res.right, bin_res.test);
                 unprocessed.push(node->GetLeft());
                 unprocessed.push(node->GetRight());

@@ -16,15 +16,13 @@ namespace imgsr
     class DTree
     {
     public:
-
-        inline DTNode* GetRoot() const { return root.get(); }
-        /// <summary>
-        /// settings for the system.
-        /// modified this before you do anything else.
-        /// </summary>
         Settings settings;
 
-        DTree(const Settings & settings_): 
+        inline DTNode* GetRoot() const { return root.get(); }
+
+        void CreateRoot();
+
+        inline DTree(const Settings & settings_): 
             settings(settings_) {}
 
         /// <summary>
@@ -40,11 +38,9 @@ namespace imgsr
         /// <summary>
         /// Predict an image. Expected width and height must be at least the width and height of image 'low'.
         /// </summary>
-        /// <param name="low">The input image. Please check if this image is not empty and only with type CV_8U first.</param>
-        /// <param name="expected_width">The width of high-res output image. Must be at least low's width.</param>
-        /// <param name="expected_height">The height of high-res output image. Must be at least low's height</param>
-        /// <param name="fuse_option"></param>
-        /// <returns>The high-res image predict by this decision tree</returns>
+        /// <param name="in_low">The input image. Please check if this image is not empty and only with type CV_8U first.</param>
+        /// <param name="size">The width of high-res output image.</param>
+        /// <returns>The high-res image predicted by this decision tree</returns>
         Mat PredictImage(const Mat & in_low, cv::Size size) const;
 
         /// <summary>
@@ -52,7 +48,6 @@ namespace imgsr
         /// Beware that the size of this two patch must be the same and match settings.patchSize.
         /// </summary>
         /// <param name="in_patch">Input patch for the prediction. Cols and rows must be the same as settings.patchSize.</param>
-        /// <param name="out_patch_ptr">Output patch for the prediction. Must be pre-allocated. Cols and rows must be the same as settings.patchSize.</param>
         Mat PredictPatch(const Mat & in_patch) const;
 
         void PrintBrief(std::ostream & os) const;
@@ -70,10 +65,6 @@ namespace imgsr
     private:
         void Learn(const Ptr<TrainingData> & total_samples);
 
-        /// <summary>
-        /// the root node of the tree.
-        /// read-only please.
-        /// </summary>
         UPtr<DTNode> root = nullptr;
     };
 
@@ -83,15 +74,11 @@ namespace imgsr
         vector<DTree> trees;
         Settings settings;
 
-        HDTrees(const Settings & settings_):
+        inline HDTrees(const Settings & settings_):
             settings(settings_) {}
 
         void Learn(const Ptr<ImageReader> & low_reader, const Ptr<ImageReader> & high_reader);
 
-        Mat PredictImage(Mat low, cv::Size expected_size) const;
+        Mat PredictImage(const Mat & img, cv::Size expected_size) const;
     };
 }
-
-// -----------------------------------------
-// Some implementation for template function
-// -----------------------------------------

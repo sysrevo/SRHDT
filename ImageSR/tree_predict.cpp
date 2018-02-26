@@ -22,34 +22,46 @@ Mat DTree::PredictImage(const Mat & in_low, cv::Size size) const
     Mat gray_res = Mat(gray);
 
     Mat count_map = Mat(gray.size(), CV_32F, cv::Scalar(0));
+    
+    // get all patches with edge
+    // 0 - patches for gray image
+    // 1 - patches for output gray image
+    // 2 - patches for count map
     auto pats = image::GetPatches(vector<Mat>({ gray, gray_res, count_map }), edge, settings.patch_size, settings.overlap);
+    size_t n_pats = pats[0].size();
+
+    vector<Mat>& pats_in = pats[0];
+    vector<Mat>& pats_out = pats[1];
+    vector<Mat>& pats_count = pats[2];
+
+    // init buffer for result
+    vector<Mat> res_buf;
+    res_buf.resize(n_pats);
+    for (auto & pat : res_buf)
+        pat = Mat(pats_in[0].size(), pats_in[0].type(), cv::Scalar(0));
+
+    // calculate predicted result for each patch
+    #pragma omp parallel for
+    for (int i = 0; i < n_pats; ++i)
     {
-        vector<Mat>& gray_pats = pats[0];
-        vector<Mat>& res_pats = pats[1];
-        vector<Mat>& count_pats = pats[2];
-        vector<Mat> res_buf;
+        res_buf[i] = PredictPatch(pats_in[i]);
+    }
 
-        size_t n_pats = gray_pats.size();
-        res_buf.resize(n_pats);
-
-        for (auto & pat : res_buf) 
-            pat = Mat(gray_pats[0].size(), gray_pats[0].type(), cv::Scalar(0));
-
-        #pragma omp parallel for
-        for (int i = 0; i < n_pats; ++i)
-        {
-            res_buf[i] = PredictPatch(gray_pats[i]);
-        }
-
-        for (auto & count_pat : count_pats)
+    // try to merge result from predicted patches
+    {
+        // count map is for getting an average value 
+        // from all possible predicted color
+        for (auto & count_pat : pats_count)
             count_pat += 1;
 
-        for (auto & res_pat : res_pats)
-            res_pat = cv::Scalar(0);
+        // clear the edge area in the output image
+        // and add all result together
+        for (auto & pat_out : pats_out)
+            pat_out = cv::Scalar(0);
 
         for (int i = 0; i < n_pats; ++i)
         {
-            res_pats[i] += res_buf[i];
+            pats_out[i] += res_buf[i];
         }
     }
     
@@ -67,11 +79,6 @@ Mat DTree::PredictImage(const Mat & in_low, cv::Size size) const
     imgs.y = image::FloatGrayMap2GrayImage(gray);
     Mat res = image::Merge(imgs);
     return res;
-    
-    
-
-    //result = image::FloatGrayMap2GrayImage(result);
-    //return result;
 }
 
 Mat DTree::PredictPatch(const Mat & pat_in) const
@@ -110,14 +117,12 @@ Mat DTree::PredictPatch(const Mat & pat_in) const
     return image::DevectorizePatch(res, settings.patch_size);;
 }
 
-Mat HDTrees::PredictImage(Mat img, cv::Size expected_size) const
+Mat HDTrees::PredictImage(const Mat & img, cv::Size size) const
 {
+    Mat out_img = img;
     for (const auto & tree : trees)
     {
-        Mat tmp;
-        tmp = tree.PredictImage(img, expected_size);
-        img = tmp;
+        out_img = tree.PredictImage(out_img, size);
     }
-
-    return img;
+    return out_img;
 }

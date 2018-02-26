@@ -124,8 +124,11 @@ namespace imgsr
                         test.r = r;
 
                         int tid = omp_get_thread_num();
+                        auto & buf_left = bufs_left[tid];
+                        auto & buf_right = bufs_right[tid];
+
                         double error_reduction = test_func(
-                            test, bufs_left[tid], bufs_right[tid]);
+                            test, buf_left, buf_right);
                         if (error_reduction != 0)
                         {
                             #pragma omp critical
@@ -135,8 +138,8 @@ namespace imgsr
                                 {
                                     res.test = test;
                                     res.error_reduction = error_reduction;
-                                    res.left = bufs_left[i];
-                                    res.right = bufs_right[i];
+                                    res.left = buf_left;
+                                    res.right = buf_right;
                                 }
                             }
                         }

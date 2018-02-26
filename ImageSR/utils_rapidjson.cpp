@@ -213,7 +213,7 @@ void json::DeserializeDTree(const Value & tree_obj, DTree* tree_out_ptr)
 {
     assert(tree_out_ptr != nullptr);
     DTree & tree = *tree_out_ptr;
-
+    tree.CreateRoot();
     DeserializeNode(tree_obj[key_root], tree.settings.patch_size, tree.GetRoot());
 
     assert(tree.GetNumLeafNodes() == tree_obj[key_n_leaf].GetInt());

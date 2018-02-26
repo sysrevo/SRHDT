@@ -1,6 +1,6 @@
 ﻿#include "Test.h"
 
-const bool learn = true;
+const bool learn = false;
 
 int main()
 {
