@@ -20,17 +20,17 @@ namespace imgsr
 
             Mat Merge(const YCrCbImage & img);
 
+            const int kFloatImageType = CV_64F;
+            const int kGrayImageType = CV_8U;
+
+            typedef double FloatMapValue;
+
             Mat GrayImage2FloatGrayMap(const Mat & gray_img);
             Mat FloatGrayMap2GrayImage(const Mat & f_gray);
 
             vector<Mat> GetPatches(const Mat & img, const Mat & edge, int pat_size, int overlap);
 
-            struct PatchPairs { vector<Mat> low, high; };
-
-            PatchPairs GetPatchPairs(const Mat & low, const Mat & high,
-                const Mat & edge, int pat_size, int overlap);
-
-            vector<vector<Mat>> GetPatches(vector<Mat> & imgs, const Mat & edge, int pat_size, int overlap);
+            vector<vector<Mat>> GetPatchesMulti(const vector<Mat> & imgs, const Mat & edge, int pat_size, int overlap);
 
             // ==================================================
             //                  Image Patch Vectorization
@@ -41,12 +41,17 @@ namespace imgsr
             void DevectorizePatch(const VecType & vec, Mat * pat_out)
             {
                 if (pat_out == nullptr) return;
-                int counter = 0;
+                int vec_pos = 0;
                 Mat & img = *pat_out;
-                for (auto it_pix = img.begin<float>(); it_pix != img.end<float>(); ++it_pix)
+
+                for (int r = 0; r < img.rows; ++r)
                 {
-                    *it_pix = vec[counter];
-                    ++counter;
+                    auto* p = img.ptr<FloatMapValue>(r);
+                    for (int c = 0; c < img.cols; ++c)
+                    {
+                        p[c] = vec[vec_pos];
+                        ++vec_pos;
+                    }
                 }
             }
 
@@ -55,19 +60,23 @@ namespace imgsr
             {
                 if (vec_out == nullptr) return;
                 assert(vec_out->size() == img.rows * img.cols);
-                assert(img.type() == CV_32F);
+                assert(img.type() == image::kFloatImageType);
 
-                int counter = 0;
-                for (auto it_pix = img.begin<float>(); it_pix != img.end<float>(); ++it_pix)
+                int vec_pos = 0;
+                for (int r = 0; r < img.rows; ++r)
                 {
-                    (*vec_out)[counter] = *it_pix;
-                    ++counter;
+                    auto* p = img.ptr<FloatMapValue>(r);
+                    for (int c = 0; c < img.cols; ++c)
+                    {
+                        (*vec_out)[vec_pos] = p[c];
+                        ++vec_pos;
+                    }
                 }
             }
 
             inline Mat DevectorizePatch(const ERowVec & vec, int patch_size)
             {
-                Mat res(cv::Size(patch_size, patch_size), CV_32F);
+                Mat res(cv::Size(patch_size, patch_size), image::kFloatImageType);
                 DevectorizePatch(vec, &res);
                 return res;
             }

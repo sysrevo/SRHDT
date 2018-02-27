@@ -11,7 +11,7 @@ TEST_CLASS(ImageTest)
 public:
     TEST_METHOD(TestForeachPatch)
     {
-        Mat mat(cv::Size(8, 4), CV_8U, cv::Scalar(0));
+        Mat mat(cv::Size(8, 4), image::kGrayImageType, cv::Scalar(0));
         int count = 0;
         for (auto it = mat.begin<uchar>(); it != mat.end<uchar>(); ++it)
         {
@@ -51,7 +51,7 @@ public:
         using namespace cv;
         Mat img = cv::imread("..\\..\\UnitTest1\\test_256_4.png", CV_LOAD_IMAGE_UNCHANGED);
         img = image::SplitYCrcb(img).y;
-        Assert::AreEqual(img.type(), CV_8U);
+        Assert::AreEqual(img.type(), image::kGrayImageType);
 
         image::ForeachPatch(img, 6, 4, [&img](const Rect & rect, Mat & patch)
         {
@@ -78,7 +78,7 @@ public:
             ERowVec expected = ERowVec::Zero(patch.cols * patch.rows);
             {
                 int count = 0;
-                for (auto it = patch.begin<float>(); it != patch.end<float>(); ++it)
+                for (auto it = patch.begin<image::FloatMapValue>(); it != patch.end<image::FloatMapValue>(); ++it)
                 {
                     expected[count] = *it;
                     ++count;
@@ -101,7 +101,7 @@ public:
         {
             ERowVec vec = image::VectorizePatch(patch);
 
-            Mat expected(Size(patch.cols, patch.rows), CV_32F);
+            Mat expected(Size(patch.cols, patch.rows), image::kFloatImageType);
             image::DevectorizePatch(vec, &expected);
             expected = patch - expected;
             int count = cv::countNonZero(expected);

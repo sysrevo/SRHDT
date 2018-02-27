@@ -71,7 +71,7 @@ void TrainingData::Reserve(size_t n_patches)
 void TrainingData::PushBackPatch(const Mat & pat_low, const Mat & pat_high)
 {
     assert(pat_low.size() == pat_high.size());
-    assert(pat_low.type() == CV_32F && pat_high.type() == CV_32F);
+    assert(pat_low.type() == image::kFloatImageType && pat_high.type() == image::kFloatImageType);
     assert(pat_low.cols * pat_low.rows == len_vec);
     size_t n_curr = Num();
     if (data_x.capacity() == data_x.size())
@@ -85,7 +85,7 @@ void TrainingData::PushBackPatch(const Mat & pat_low, const Mat & pat_high)
 
 void TrainingData::HandlePreparedImage(const Mat & in_low, const Mat & in_high)
 {
-    assert(in_high.type() == CV_8U && in_low.type() == CV_8U);
+    assert(in_high.type() == image::kGrayImageType && in_low.type() == image::kGrayImageType);
     assert(in_low.size() == in_high.size());
 
     Mat edge = image::GetEdgeMap(in_low, settings.canny_edge_threshold);
@@ -93,12 +93,13 @@ void TrainingData::HandlePreparedImage(const Mat & in_low, const Mat & in_high)
     Mat low = image::GrayImage2FloatGrayMap(in_low);
     Mat high = image::GrayImage2FloatGrayMap(in_high);
 
-    auto pairs = image::GetPatchPairs(low, high, edge, settings.patch_size, settings.overlap);
-    size_t n_pairs = pairs.low.size();
-
-    for (size_t i = 0; i < n_pairs; ++i)
+    auto pairs = image::GetPatchesMulti(vector<Mat>({ low, high }), edge, settings.patch_size, settings.overlap);
+    auto& low_pats = pairs[0];
+    auto& high_pats = pairs[1];
+    size_t n_pats = low_pats.size();
+    for (size_t i = 0; i < n_pats; ++i)
     {
-        PushBackPatch(pairs.low[i], pairs.high[i]);
+        PushBackPatch(low_pats[i], high_pats[i]);
     }
 
     /*image::ForeachPatch(low, settings.patch_size, settings.overlap,

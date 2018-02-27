@@ -150,26 +150,26 @@ Mat image::Merge(const YCrCbImage & img)
 
 Mat image::GrayImage2FloatGrayMap(const Mat & gray_img)
 {
-    assert(gray_img.type() == CV_8U);
+    assert(gray_img.type() == image::kGrayImageType);
     Mat f_gray;
-    gray_img.convertTo(f_gray, CV_32F);
+    gray_img.convertTo(f_gray, image::kFloatImageType);
     f_gray /= kScaleFactor;
     return f_gray;
 }
 
 Mat image::FloatGrayMap2GrayImage(const Mat & f_gray)
 {
-    assert(f_gray.type() == CV_32F);
+    assert(f_gray.type() == image::kFloatImageType);
     Mat res = Mat(f_gray);
     res *= kScaleFactor;
-    res.convertTo(res, CV_8U);
+    res.convertTo(res, image::kGrayImageType);
     return res;
 }
 
 vector<Mat> image::GetPatches(const Mat & img, const Mat & edge, int pat_size, int overlap)
 {
-    assert(img.type() == CV_32F);
-    assert(edge.type() == CV_8U);
+    assert(img.type() == image::kFloatImageType);
+    assert(edge.type() == image::kGrayImageType);
     assert(img.size() == edge.size());
 
     vector<Mat> res;
@@ -184,28 +184,7 @@ vector<Mat> image::GetPatches(const Mat & img, const Mat & edge, int pat_size, i
     return res;
 }
 
-image::PatchPairs image::GetPatchPairs(const Mat & low, const Mat & high, const Mat & edge, int pat_size, int overlap)
-{
-    assert(low.type() == CV_32F && high.type() == CV_32F);
-    assert(edge.type() == CV_8U);
-    assert(high.size() == edge.size() && high.size() == low.size());
-
-    PatchPairs res;
-
-    image::ForeachPatch(low, pat_size, overlap, [&edge, &high, &res](
-        const cv::Rect& rect, const Mat& pat_low)
-    {
-        if (cv::countNonZero(edge(rect)) > 0)
-        {
-            res.low.push_back(pat_low);
-            res.high.push_back(high(rect));
-        }
-    });
-
-    return res;
-}
-
-vector<vector<Mat>> image::GetPatches(vector<Mat>& imgs, const Mat & edge, int pat_size, int overlap)
+vector<vector<Mat>> image::GetPatchesMulti(const vector<Mat>& imgs, const Mat & edge, int pat_size, int overlap)
 {
     for (const auto & img : imgs)
     {

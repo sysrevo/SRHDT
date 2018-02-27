@@ -28,8 +28,8 @@ namespace UnitTest1
             Assert::IsTrue(data.Num() == 0);
 
             Size size(settings.patch_size, settings.patch_size);
-            Mat patch_x(size, CV_32F, cv::Scalar(1));
-            Mat patch_y(size, CV_32F, cv::Scalar(1));
+            Mat patch_x(size, image::kFloatImageType, cv::Scalar(1));
+            Mat patch_y(size, image::kFloatImageType, cv::Scalar(1));
 
             int num = 4;
             for (int i = 0; i < num; ++i)
@@ -46,8 +46,8 @@ namespace UnitTest1
             TrainingData data(settings);
 
             Size size(settings.patch_size, settings.patch_size);
-            Mat patch_x(size, CV_32F, cv::Scalar(1));
-            Mat patch_y(size, CV_32F, cv::Scalar(1));
+            Mat patch_x(size, image::kFloatImageType, cv::Scalar(1));
+            Mat patch_y(size, image::kFloatImageType, cv::Scalar(1));
 
             data.PushBackPatch(patch_x, patch_y);
 
@@ -69,8 +69,8 @@ namespace UnitTest1
             TrainingData data2(settings);
 
             Size size(settings.patch_size, settings.patch_size);
-            Mat patch_x(size, CV_32F, cv::Scalar(1));
-            Mat patch_y(size, CV_32F, cv::Scalar(2));
+            Mat patch_x(size, image::kFloatImageType, cv::Scalar(1));
+            Mat patch_y(size, image::kFloatImageType, cv::Scalar(2));
 
             int n = 10;
             for (int i = 0; i < n; ++i)

@@ -28,20 +28,21 @@ Mat DTree::PredictImage(const Mat & in_low, cv::Size size,
     Mat gray = image::GrayImage2FloatGrayMap(imgs.y);
     Mat gray_res = Mat(gray);
 
-    Mat count_map = Mat(gray.size(), CV_32F, cv::Scalar(0));
+    Mat count_map = Mat(gray.size(), image::kFloatImageType, cv::Scalar(0));
     
     // get all patches with edge
     // 0 - patches for gray image
     // 1 - patches for output gray image
     // 2 - patches for count map
-    auto pats = image::GetPatches(vector<Mat>({ gray, gray_res, count_map }), edge, settings.patch_size, settings.overlap);
-    size_t n_pats = pats[0].size();
-
-    if (status) status->n_pats = n_pats;
-
+    auto pats = image::GetPatchesMulti(vector<Mat>({ gray, gray_res, count_map }), edge, settings.patch_size, settings.overlap);
+    
     vector<Mat>& pats_in = pats[0];
     vector<Mat>& pats_out = pats[1];
-    vector<Mat>& pats_count = pats[2];
+    vector<Mat>& pats_count = pats[2]; 
+
+    size_t n_pats = pats_in.size();
+
+    if (status) status->n_pats = n_pats;
 
     // init buffer for result
     vector<Mat> res_buf;
@@ -80,8 +81,8 @@ Mat DTree::PredictImage(const Mat & in_low, cv::Size size,
     
     for (int r = 0; r < count_map.rows; ++r)
     {
-        float* ptr_count = count_map.ptr<float>(r);
-        float* ptr_gray = gray.ptr<float>(r);
+        auto* ptr_count = count_map.ptr<image::FloatMapValue>(r);
+        auto* ptr_gray = gray.ptr<image::FloatMapValue>(r);
         for (int c = 0; c < count_map.cols; ++c)
         {
             if (ptr_count[c] != 0)

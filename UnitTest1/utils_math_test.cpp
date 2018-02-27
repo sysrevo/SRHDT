@@ -59,9 +59,9 @@ public:
 
     TEST_METHOD(TestRotateVec)
     {
-        Mat pat(cv::Size(6, 6), CV_32F);
+        Mat pat(cv::Size(6, 6), image::kFloatImageType);
         int count = 0;
-        for (auto it = pat.begin<float>(); it != pat.end<float>(); ++it)
+        for (auto it = pat.begin<double>(); it != pat.end<double>(); ++it)
         {
             *it = count;
             ++count;
