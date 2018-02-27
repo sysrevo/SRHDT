@@ -140,7 +140,8 @@ void Test()
         Mat high = imgs_high->Get(i);
         Mat low = imgs_low->Get(i);
 
-        Mat out = MonitorProcessTest(low, high.size());
+        //Mat out = MonitorProcessTest(low, high.size());
+        Mat out = hdtrees->PredictImage(low, high.size());
 
         Mat h0;
         cv::resize(low, h0, high.size(), 0, 0, cv::INTER_CUBIC);

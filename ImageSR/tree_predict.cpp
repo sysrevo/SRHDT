@@ -50,7 +50,7 @@ Mat DTree::PredictImage(const Mat & in_low, cv::Size size,
         pat = Mat(pats_in[0].size(), pats_in[0].type(), cv::Scalar(0));
 
     // calculate predicted result for each patch
-    #pragma omp parallel for
+    #pragma omp parallel for num_threads(4)
     for (int i = 0; i < n_pats; ++i)
     {
         res_buf[i] = PredictPatch(pats_in[i]);
