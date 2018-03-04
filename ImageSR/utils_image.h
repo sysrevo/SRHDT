@@ -21,12 +21,11 @@ namespace imgsr
             Mat Merge(const YCrCbImage & img);
 
             const int kFloatImageType = CV_64F;
-            const int kGrayImageType = CV_8U;
 
             typedef double FloatMapValue;
 
-            Mat GrayImage2FloatGrayMap(const Mat & gray_img);
-            Mat FloatGrayMap2GrayImage(const Mat & f_gray);
+            Mat MatUchar2Float(const Mat & gray_img);
+            Mat MatFloat2Uchar(const Mat & f_gray);
 
             vector<Mat> GetPatches(const Mat & img, const Mat & edge, int pat_size, int overlap);
 

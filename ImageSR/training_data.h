@@ -32,12 +32,10 @@ namespace imgsr
         void Clear();
         void ClearAndRelease();
         void Append(const TrainingData & data);
-        void Append(const vector<TrainingData> & bunch_of_data);
 
         void PushBackPatch(const Mat & low_patch, const Mat & high_patch);
         void PushBackImage(const Mat & in_low, const Mat & in_high);
-        void PushBackImages(const Ptr<ImageReader> & low_imgs_reader,
-            const Ptr<ImageReader> & high_imgs_reader, int n_threads = 1);
+        void PushBackImages(const ImageReader& low_imgs_reader, const ImageReader& high_imgs_reader, int n_threads = 1);
 
         inline size_t Num() const {
             return data_x.size() / len_vec;
@@ -85,8 +83,6 @@ namespace imgsr
         const Settings settings;
         const int len_vec;
     private:
-        void HandlePreparedImage(const Mat & in_low, const Mat & in_high);
-
         vector<Real> data_x;
         vector<Real> data_y;
     };

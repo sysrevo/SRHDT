@@ -161,6 +161,7 @@
   <ItemGroup>
     <ClInclude Include="binary_test.h" />
     <ClInclude Include="image_reader.h" />
+    <ClInclude Include="imgsr_system.h" />
     <ClInclude Include="node.h" />
     <ClInclude Include="settings.h" />
     <ClInclude Include="status_struct.h" />

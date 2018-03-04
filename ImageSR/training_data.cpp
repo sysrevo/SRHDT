@@ -7,41 +7,63 @@
 using namespace imgsr;
 using namespace utils;
 
-void TrainingData::Split(const BinaryTest & test, TrainingData* left_ptr, TrainingData* right_ptr) const
+void TrainingData::Split(const BinaryTest & test, 
+    TrainingData* out_left, TrainingData* out_right) const
 {
-    size_t n_total = Num();
-    size_t n_left = GetLeftPatchesNumber(test);
-    size_t n_right = n_total - n_left;
+    // Number of things
+    // Putting n_ in front of every number of something is just my style
+    const size_t n_total = Num();
 
-    if (left_ptr) left_ptr->Resize(n_left);
-    if (right_ptr) right_ptr->Resize(n_right);
+    // Store the result on a temp buffer for later usage
+    vector<bool> on_left_res(n_total);
+    for (int i = 0; i < n_total; ++i)
+        on_left_res[i] = test.IsOnLeft(X(i));
 
+    // Count the number of left and right samples
+    // The number of left and right samples is needed to avoid dynamic allocation 
+    // of memory when the generating results
+    // And obviously, it is either left or right
+    size_t n_left = 0;
+    for (bool on_left : on_left_res)
+        if (on_left) n_left += 1;
+    size_t n_right = n_total - n_left;;
+
+    // Clear things up in case of messing up
+    // Resize the data to avoid dynamic allocation
+    if (out_left)
+        out_left->Resize(n_left);
+
+    if (out_right) 
+        out_right->Resize(n_right); 
+
+    // Split the training data into left and right
     int ind_left = 0;
     int ind_right = 0;
     for (auto i = 0; i < n_total; ++i)
     {
-        if (test.IsOnLeft(X(i)))
+        const bool on_left = on_left_res[i];
+        if (on_left)
         {
-            if (left_ptr)
+            if (out_left)
             {
-                left_ptr->X(ind_left) = X(i);
-                left_ptr->Y(ind_left) = Y(i);
+                out_left->X(ind_left) = X(i);
+                out_left->Y(ind_left) = Y(i);
             }
             ++ind_left;
         }
         else
         {
-            if (right_ptr)
+            if (out_right)
             {
-                right_ptr->X(ind_right) = X(i);
-                right_ptr->Y(ind_right) = Y(i);
+                out_right->X(ind_right) = X(i);
+                out_right->Y(ind_right) = Y(i);
             }
             ++ind_right;
         }
     }
 
-    assert(!left_ptr || left_ptr->Num() == ind_left);
-    assert(!right_ptr || right_ptr->Num() == ind_right);
+    assert(!out_left || out_left->Num() == ind_left);
+    assert(!out_right || out_right->Num() == ind_right);
     assert(ind_left + ind_right == Num());
 }
 
@@ -83,54 +105,50 @@ void TrainingData::PushBackPatch(const Mat & pat_low, const Mat & pat_high)
     image::VectorizePatch(pat_high, &Y(n_curr));
 }
 
-void TrainingData::HandlePreparedImage(const Mat & in_low, const Mat & in_high)
-{
-    assert(in_high.type() == image::kGrayImageType && in_low.type() == image::kGrayImageType);
-    assert(in_low.size() == in_high.size());
-
-    Mat edge = image::GetEdgeMap(in_low, settings.canny_edge_threshold);
-
-    Mat low = image::GrayImage2FloatGrayMap(in_low);
-    Mat high = image::GrayImage2FloatGrayMap(in_high);
-
-    auto pairs = image::GetPatchesMulti(vector<Mat>({ low, high }), edge, settings.patch_size, settings.overlap);
-    auto& low_pats = pairs[0];
-    auto& high_pats = pairs[1];
-    size_t n_pats = low_pats.size();
-    for (size_t i = 0; i < n_pats; ++i)
-    {
-        PushBackPatch(low_pats[i], high_pats[i]);
-    }
-
-    /*image::ForeachPatch(low, settings.patch_size, settings.overlap,
-        [&edge, &high, this](
-            const cv::Rect& rect, const Mat& pat_low)
-    {
-        const Mat pat_edge = edge(rect);
-        const Mat pat_high = high(rect);
-        if (cv::countNonZero(pat_edge) > 0)
-        {
-            this->PushBackPatch(pat_low, pat_high);
-        }
-    });*/
-}
-
 void TrainingData::PushBackImage(const Mat & in_low, const Mat & in_high)
 {
     assert(!in_low.empty() && !in_high.empty());
 
     if (in_low.empty() || in_high.empty()) return;
 
+    // resize the image to be able to extract overlapped patches
     Mat high = image::ResizeImage(in_high, in_high.size(), settings.patch_size, settings.overlap);
     Mat low = image::ResizeImage(in_low, high.size(), settings.patch_size, settings.overlap);
 
-    if(high.type() == CV_8UC3)
-        high = image::SplitYCrcb(high).y;
+    // Now extract the luminance value as the intensity value
+    // for the following process
+    // Now the type of high and low should be CV_8U of range [0, 255]
+    high = image::SplitYCrcb(high).y;
+    low = image::SplitYCrcb(low).y;
 
-    if (low.type() == CV_8UC3)
-        low = image::SplitYCrcb(low).y;
+    assert(high.type() == CV_8U);
+    assert(low.type() == high.type());
+    assert(low.size() == high.size());
 
-    HandlePreparedImage(low, high);
+    // Now extract the edge map for edge patch identification 
+    // We only need overlapped patches with edge pixel(s)
+    // since bicubic(or any) interpolation is pretty good at non-edge area
+    Mat edge = image::GetEdgeMap(high, settings.canny_edge_threshold);
+
+    // Now convert the image to float map of range [0, 1], which is 
+    // mapped from the original CV_8U map
+
+    // Range [0, 1] is needed for EVERY processes involving Vectorization
+    // If you use [0, 255], the following super complicated math things 
+    // will produce a HUGE result value and the error caused by float(or double) is too high
+    low = image::MatUchar2Float(low);
+    high = image::MatUchar2Float(high);
+
+    // Now extract patches and push them to training data
+    auto pairs = image::GetPatchesMulti(vector<Mat>({ low, high }), edge, settings.patch_size, settings.overlap);
+    auto& low_pats = pairs[0];
+    auto& high_pats = pairs[1];
+    size_t n_pats = low_pats.size();
+
+    for (size_t i = 0; i < n_pats; ++i)
+    {
+        PushBackPatch(low_pats[i], high_pats[i]);
+    }
 }
 
 void TrainingData::Append(const TrainingData & data)
@@ -144,34 +162,17 @@ void TrainingData::Append(const TrainingData & data)
     data_y.insert(data_y.end(), data.data_y.begin(), data.data_y.end());
 }
 
-void TrainingData::Append(const vector<TrainingData>& data_to_append)
+void TrainingData::PushBackImages(const ImageReader& low_imgs_reader, const ImageReader& high_imgs_reader, int n_threads)
 {
-    size_t n_total = 0;
-    for (const auto & data : data_to_append)
-    {
-        n_total += data.Num();
-    }
-    Reserve(n_total);
-
-    for (const auto & data : data_to_append)
-    {
-        assert(data.settings == settings);
-        Append(data);
-    }
-}
-
-void TrainingData::PushBackImages(const Ptr<ImageReader> & low_imgs,
-    const Ptr<ImageReader> & high_imgs, int n_threads)
-{
-    assert(low_imgs->Size() == high_imgs->Size());
-    if (low_imgs->Empty()) return;
+    assert(low_imgs_reader.Size() == high_imgs_reader.Size());
+    if (low_imgs_reader.Empty()) return;
     if (n_threads < 1) n_threads = 1;
 
-    size_t n_imgs = low_imgs->Size();
+    size_t n_imgs = low_imgs_reader.Size();
 
     for (int i = 0; i < n_imgs; ++i)
     {
-        PushBackImage(low_imgs->Get(i), high_imgs->Get(i));
+        PushBackImage(low_imgs_reader.Get(i), high_imgs_reader.Get(i));
     }
 }
 

@@ -8,15 +8,8 @@ using namespace imgsr::utils;
 
 utils::VectorRotator rotator(1);
 
-Mat DTree::PredictImage(const Mat & in_low, cv::Size size,
-    DTreePredictStatus* status) const
+Mat DTree::PredictImage(const Mat & in_low, cv::Size size) const
 {
-    if (status)
-    {
-        status->n_curr_pats = 0;
-        status->n_pats = 0;
-    }
-
     rotator = VectorRotator(settings.patch_size);
     using namespace cv;
 
@@ -25,7 +18,7 @@ Mat DTree::PredictImage(const Mat & in_low, cv::Size size,
     image::YCrCbImage imgs = image::SplitYCrcb(low);
     Mat edge = image::GetEdgeMap(imgs.y, settings.canny_edge_threshold);
 
-    Mat gray = image::GrayImage2FloatGrayMap(imgs.y);
+    Mat gray = image::MatUchar2Float(imgs.y);
     Mat gray_res = Mat(gray);
 
     Mat count_map = Mat(gray.size(), image::kFloatImageType, cv::Scalar(0));
@@ -42,8 +35,6 @@ Mat DTree::PredictImage(const Mat & in_low, cv::Size size,
 
     size_t n_pats = pats_in.size();
 
-    if (status) status->n_pats = n_pats;
-
     // init buffer for result
     vector<Mat> res_buf;
     res_buf.resize(n_pats);
@@ -55,10 +46,6 @@ Mat DTree::PredictImage(const Mat & in_low, cv::Size size,
     for (int i = 0; i < n_pats; ++i)
     {
         res_buf[i] = PredictPatch(pats_in[i]);
-        #pragma omp critical
-        {
-            if(status) ++(status->n_curr_pats);
-        }
     }
 
     // try to merge result from predicted patches
@@ -90,7 +77,7 @@ Mat DTree::PredictImage(const Mat & in_low, cv::Size size,
         }
     }
 
-    imgs.y = image::FloatGrayMap2GrayImage(gray);
+    imgs.y = image::MatFloat2Uchar(gray);
     Mat res = image::Merge(imgs);
     return res;
 }
@@ -131,16 +118,12 @@ Mat DTree::PredictPatch(const Mat & pat_in) const
     return image::DevectorizePatch(res, settings.patch_size);
 }
 
-Mat HDTrees::PredictImage(const Mat & img, cv::Size size, 
-    HDTreesPredictStatus* status) const
+Mat HDTrees::PredictImage(const Mat & img, cv::Size size) const
 {
-    if(status) *status = HDTreesPredictStatus();
     Mat out_img = img;
     for (int layer = 0; layer < trees.size(); ++layer)
     {
-        if(status) status->layer = layer;
-        DTreePredictStatus* tree_status = status ? &status->tree_status : nullptr;
-        out_img = trees[layer].PredictImage(out_img, size, tree_status);
+        out_img = trees[layer].PredictImage(out_img, size);
     }
     return out_img;
 }

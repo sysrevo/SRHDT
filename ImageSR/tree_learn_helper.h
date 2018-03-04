@@ -73,89 +73,73 @@ namespace imgsr
 
         template<class HandleFunc>
         BinaryTestResult ForeachRandomBinaryTest(
-            int rand_seed, const Settings & sets, HandleFunc test_func, DTreeTraingingStatus* status, int n_threads = 4)
+            int rand_seed, const Settings & sets, HandleFunc test_func, DTree::LearnStatus* status, int n_threads = 4)
         {
             srand(rand_seed);
-            int len_vec = sets.GetVectorLength();
-            int n_tests = sets.n_test;
+            const int len_vec = sets.GetVectorLength();
+            const int n_tests = sets.n_test;
             // [0, 1, 2, ..., len_vec - 2, len_vec - 1]
-            vector<int> rand_pos = math::Range(0, len_vec);
+            vector<int> rand_pos1 = math::RangeVector(0, len_vec);
+            vector<int> rand_pos2 = rand_pos1;
+
             // [0, 1, 2, ..., 254, 255] for random r, which means each of a 8bit color
-
+            // and then map into [0, 1]
             array<double, 255> rand_r;
-            {
-                auto it = rand_r.begin();
-                for (int i_r : math::Range(0, len_vec))
-                {
-                    *it = i_r;
-                    *it /= image::kScaleFactor;
-                    ++it;
-                }
-            }
+            math::Range(rand_r.begin(), rand_r.end(), 0);
+            for (auto& r : rand_r) r /= image::kScaleFactor;
 
-            std::random_shuffle(rand_pos.begin(), rand_pos.end());
+            std::random_shuffle(rand_pos1.begin(), rand_pos1.end());
+            std::random_shuffle(rand_pos2.begin(), rand_pos2.end());
             std::random_shuffle(rand_r.begin(), rand_r.end());
 
-            int n_test_gen = 0;
+            int n_curr_tests = 0;
             BinaryTestResult res;
 
-            vector<Ptr<TrainingData>> bufs_left(n_threads);
-            vector<Ptr<TrainingData>> bufs_right(n_threads);
-            for (auto & buf : bufs_left)
-                buf = TrainingData::Create(sets);
+            auto buf_left = TrainingData::Create(sets);
+            auto buf_right = TrainingData::Create(sets);
+            
 
-            for (auto & buf : bufs_right)
-                buf = TrainingData::Create(sets);
-
-            #pragma omp parallel for num_threads(n_threads)
-            for (int i = 0; i < rand_pos.size(); ++i)
+            for (int i = 0; i < rand_pos1.size(); ++i)
             {
-                int p1 = rand_pos[i];
-                if (n_test_gen >= n_tests) break;
-                for (int p2 : rand_pos)
+                int p1 = rand_pos1[i];
+                for (int p2 : rand_pos2)
                 {
-                    if (n_test_gen >= n_tests) break;
                     for (double r : rand_r)
                     {
-                        if (n_test_gen >= n_tests) break;
                         BinaryTest test;
                         test.p1 = p1;
                         test.p2 = p2;
                         test.r = r;
 
-                        int tid = omp_get_thread_num();
-                        auto & buf_left = bufs_left[tid];
-                        auto & buf_right = bufs_right[tid];
-
                         double error_reduction = test_func(
-                            test, buf_left, buf_right);
+                            test, buf_left.get(), buf_right.get());
                         if (error_reduction != 0)
                         {
-                            #pragma omp critical
+                            ++n_curr_tests;
+                            if (status) status->n_curr_test = n_curr_tests;
+                            if (error_reduction > res.error_reduction)
                             {
-                                ++n_test_gen;
-                                if (status) status->n_test_gen = n_test_gen;
-                                if (error_reduction > res.error_reduction)
-                                {
-                                    res.test = test;
-                                    res.error_reduction = error_reduction;
-                                    res.left = buf_left;
-                                    res.right = buf_right;
-                                }
+                                res.test = test;
+                                res.error_reduction = error_reduction;
+                                res.left = buf_left;
+                                res.right = buf_right;
                             }
                         }
+                        if (n_curr_tests >= n_tests) break;
                     }
+                    if (n_curr_tests >= n_tests) break;
                 }
+                if (n_curr_tests >= n_tests) break;
             }
 
             return res;
         }
 
         BinaryTestResult GenerateTestWithMaxErrorReduction(
-            Real err, const TrainingData & samples, int seed, DTreeTraingingStatus* status)
+            Real err, const TrainingData & samples, int seed, DTree::LearnStatus* status)
         {
             auto func = [&samples, err](const BinaryTest & test,
-                const Ptr<TrainingData> & buf_left, const Ptr<TrainingData> & buf_right)
+                TrainingData* buf_left, TrainingData* buf_right)
             {
                 size_t n_left = samples.GetLeftPatchesNumber(test);
                 size_t n_right = samples.Num() - n_left;
@@ -163,8 +147,6 @@ namespace imgsr
                 BinaryTestResult res;
                 if (success)
                 {
-                    buf_left->Clear();
-                    buf_right->Clear();
                     samples.Split(test, buf_left, buf_right);
 
                     // do some very complex calculation

@@ -134,8 +134,8 @@ image::YCrCbImage image::SplitYCrcb(const Mat & img)
 {
     YCrCbImage res;
     Mat buf;
-    if(img.type() == CV_8UC3)
-        cv::cvtColor(img, buf, CV_RGB2YCrCb);
+    if (img.channels() == 3)
+        cv::cvtColor(img, buf, CV_BGR2YCrCb);
     cv::split(buf, (Mat*)&res);
     return res;
 }
@@ -144,32 +144,32 @@ Mat image::Merge(const YCrCbImage & img)
 {
     Mat res;
     cv::merge((Mat*)&img, 3, res);
-    cv::cvtColor(res, res, CV_YCrCb2RGB);
+    cv::cvtColor(res, res, CV_YCrCb2BGR);
     return res;
 }
 
-Mat image::GrayImage2FloatGrayMap(const Mat & gray_img)
+Mat image::MatUchar2Float(const Mat & img)
 {
-    assert(gray_img.type() == image::kGrayImageType);
-    Mat f_gray;
-    gray_img.convertTo(f_gray, image::kFloatImageType);
-    f_gray /= kScaleFactor;
-    return f_gray;
+    assert(img.type() == CV_8U);
+    Mat f_img;
+    img.convertTo(f_img, image::kFloatImageType);
+    f_img /= kScaleFactor;
+    return f_img;
 }
 
-Mat image::FloatGrayMap2GrayImage(const Mat & f_gray)
+Mat image::MatFloat2Uchar(const Mat & img)
 {
-    assert(f_gray.type() == image::kFloatImageType);
-    Mat res = Mat(f_gray);
-    res *= kScaleFactor;
-    res.convertTo(res, image::kGrayImageType);
-    return res;
+    assert(img.type() == image::kFloatImageType);
+    Mat u8_img = Mat(img);
+    u8_img *= kScaleFactor;
+    u8_img.convertTo(u8_img, CV_8U);
+    return u8_img;
 }
 
 vector<Mat> image::GetPatches(const Mat & img, const Mat & edge, int pat_size, int overlap)
 {
     assert(img.type() == image::kFloatImageType);
-    assert(edge.type() == image::kGrayImageType);
+    assert(edge.type() == CV_8U);
     assert(img.size() == edge.size());
 
     vector<Mat> res;

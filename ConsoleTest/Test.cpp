@@ -74,7 +74,7 @@ void Init()
     Settings settings;
     settings.layers = 4;
     settings.fuse_option = Settings::Rotate;
-    settings.min_n_patches = 1200;
+    settings.min_n_patches = 1000;
 
     hdtrees = make_shared<HDTrees>(settings);
 
@@ -87,38 +87,48 @@ void Init()
 void Learn()
 {
     // learning
-    hdtrees->Learn(training.low, training.high);
+    const HDTrees::LearnStatus* status;
+    bool is_finish = false;
+    std::thread t([&is_finish, &status]()
+    {
+        hdtrees->Learn(*training.low, *training.high);
+        status = &hdtrees->GetLearnStatus();
+        is_finish = true;
+    });
+
+    int last_layer = -1;
+
+    while (!is_finish)
+    {
+        if (last_layer == status->layer)
+            cout << "\r";
+        else
+        {
+            // layer changed
+            cout << endl;
+            last_layer = status->layer;
+        }
+
+        // wipe things out
+        char tmp[64];
+        memset(tmp, ' ', sizeof(tmp));
+        tmp[63] = 0;
+        cout << tmp << "\r";
+        
+        // output status
+        cout << "curr_layer: " << status->layer
+            << ", samples" << status->tree->n_samples
+            << ", non-leaves:" << status->tree->n_nonleaf
+            << ", leaves:" << status->tree->n_leaf
+            << ", n_test:" << status->tree->n_curr_test;
+        cout.flush();
+        std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    }
+    cout << endl;
+    t.join();
 
     RapidJsonSerializer json;
     json.Serialize(*hdtrees, json_path);
-}
-
-Mat MonitorProcessTest(const Mat & low, cv::Size size)
-{
-    using std::thread;
-    Mat out;
-
-    bool is_finish = false;
-    HDTreesPredictStatus status;
-
-    thread t([&is_finish, &low, &size, &out, &status]()
-    {
-        out = hdtrees->PredictImage(low, size, &status);
-        is_finish = true;
-    });
-    
-    cout << endl;
-    while (!is_finish)
-    {
-        std::this_thread::sleep_for(std::chrono::milliseconds(30));
-        cout << "layer: " << status.layer << ", num: " << status.tree_status.n_curr_pats << endl;;
-    }
-
-    cout << endl;
-
-    t.join();
-
-    return out;
 }
 
 void Test()

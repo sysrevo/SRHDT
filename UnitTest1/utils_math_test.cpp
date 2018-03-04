@@ -26,15 +26,36 @@ public:
 
     TEST_METHOD(TestRange)
     {
+        vector<std::pair<array<int, 2>, vector<int>>> tests =
+        {
+            { { 1, 0}, {}}, 
+            { { 1, 2 },{ 1, 2 } },
+            { { 0, 6 },{ 0, 1, 2, 3, 4, 5 } },
+            { { 4, 3 },{ 4, 5, 6 } }
+        };
+
+        for (const auto & test : tests)
+        {
+            vector<int> res;
+            res.resize(test.first[1]);
+            math::Range(res.begin(), res.end(), test.first[0]);
+
+            Assert::IsTrue(res == test.second);
+        }
+    }
+
+    TEST_METHOD(TestRangeVector)
+    {
         vector<std::pair<array<int, 2>, vector<int>>> tests = 
         {
-            {{1, 2}, {1}}, 
-            {{0, 6}, {0, 1, 2, 3, 4, 5}},
-            {{4, 6}, {4, 5}}
+            { { 1, 0 },{} },
+            { { 1, 2 },{ 1, 2 } },
+            { { 0, 6 },{ 0, 1, 2, 3, 4, 5 } },
+            { { 4, 3 },{ 4, 5, 6 } }
         };
         for (const auto & test : tests)
         {
-            auto res = math::Range(test.first[0], test.first[1]);
+            auto res = math::RangeVector(test.first[0], test.first[1]);
             Assert::IsTrue(res == test.second);
         }
     }

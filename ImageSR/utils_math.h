@@ -22,9 +22,25 @@ namespace imgsr
                 return std::equal(pattern.rbegin(), pattern.rend(), value.rbegin());
             }
 
-            // return range from [start, start+1, start+2, ... , end-2, end-1]
-            vector<int> Range(int start, int end);
+            template<class Iterator>
+            void Range(Iterator beg, Iterator end, int start = 0)
+            {
+                int count = 0;
+                for (Iterator it = beg; it != end; ++it)
+                {
+                    *it = start + count;
+                    ++count;
+                }
+            }
 
+            template<class T = int>
+            vector<T> RangeVector(int start, int size)
+            {
+                vector<T> res(size);
+                Range(res.begin(), res.end(), start);
+                return res;
+            }
+            
             /// <summary>
             /// Split an array of strings into n arrays whose sizes are input.size()/num. The size of input must be larger than num.The number of result arrays must be larger than 0.
             /// If the input array's size % num != 0, then the size of the last array is larger than the others.
