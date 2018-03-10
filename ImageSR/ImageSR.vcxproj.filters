@@ -121,6 +121,9 @@
     <ClCompile Include="utils_filesys.cpp">
       <Filter>源文件\system\utils</Filter>
     </ClCompile>
+    <ClCompile Include="tree.cpp">
+      <Filter>源文件\system</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Natvis Include="eigen_image_watch.natvis" />

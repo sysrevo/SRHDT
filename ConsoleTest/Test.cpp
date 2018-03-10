@@ -71,6 +71,10 @@ ImagesPair training;
 
 void Init()
 {
+    Mat img = cv::imread("D:\\test\\SRHDT\\SRHDT\\2xSet5-Bicubic\\baby[1-Original].bmp");
+    Mat edge = utils::image::GetEdgeMap(img, 20);
+    cv::imwrite("D:\\test\\SRHDT\\SRHDT\\2xSet5-Bicubic\\edge.png", edge);
+
     Settings settings;
     settings.layers = 4;
     settings.fuse_option = Settings::Rotate;
@@ -141,9 +145,9 @@ void Test()
 
 
     Ptr<HandlerImageReader> imgs_low = HandlerImageReader::Create();
-    imgs_low->SetInput({ set5.low, set14.low });
+    imgs_low->SetInput({ bsd100.low, set5.low, set14.low });
     Ptr<HandlerImageReader> imgs_high = HandlerImageReader::Create();
-    imgs_high->SetInput({ set5.high, set14.high });
+    imgs_high->SetInput({ bsd100.high, set5.high, set14.high });
 
     for (int i = 0; i < imgs_low->Size(); ++i)
     {

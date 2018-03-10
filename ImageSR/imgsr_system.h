@@ -8,6 +8,15 @@ namespace imgsr
     public:
         virtual Mat PredictImage(
             const Mat& img, cv::Size size) const = 0;
+
+        inline Mat PredictImageRatio(
+            const Mat& img, double ratio) const
+        {
+            cv::Size size = img.size();
+            size.width *= ratio;
+            size.height *= ratio;
+            return PredictImage(img, size);
+        }
     };
 
     class LearningBasedImgSR : public ImgSR

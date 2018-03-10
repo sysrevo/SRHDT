@@ -20,8 +20,7 @@ namespace imgsr
 
         void CreateRoot();
 
-        inline DTree(const Settings & settings_): 
-            settings(settings_) {}
+        DTree(const Settings & settings_);
 
         /// <summary>
         /// Learn input patches. Please modified this->settings to match the requirements before calling this function.
@@ -72,7 +71,7 @@ namespace imgsr
         LearnStatus learn_stat;
     };
 
-    class HDTrees
+    class HDTrees : public LearningBasedImgSR
     {
     public:
         struct LearnStatus
@@ -81,17 +80,19 @@ namespace imgsr
             const DTree::LearnStatus* tree = nullptr;
         };
 
-        inline HDTrees(const Settings & settings_):
-            settings(settings_) {}
+        HDTrees(const Settings & settings_);
 
-        void Learn(const ImageReader& low_reader, const ImageReader& high_reader);
+        virtual void Learn(
+            const ImageReader& low_reader, const ImageReader& high_reader) override;
 
-        Mat PredictImage(const Mat & img, cv::Size expected_size) const;
+        virtual Mat PredictImage(const Mat & in_low, cv::Size size) const override;
 
         inline const LearnStatus& GetLearnStatus() const
         {
             return stat_learn;
         }
+
+        static Ptr<HDTrees> Create(const Settings& settings);
 
         vector<DTree> trees;
         Settings settings;
