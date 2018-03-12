@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.27130.2036
+VisualStudioVersion = 15.0.27004.2010
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SRHDT", "ImageSR\ImageSR.vcxproj", "{B17FEE48-8F46-4EE5-A158-D35C5A313045}"
 EndProject
@@ -12,6 +12,8 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TestingGUI", "TestingGUI\TestingGUI.vcxproj", "{B12702AD-ABFB-343A-A199-8E24837244A3}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SRHDTExportDll", "SRHDTExportDll\SRHDTExportDll.vcxproj", "{DD9ADF78-AFD2-48EA-8E71-05EC76274A29}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Utils", "Utils\Utils.vcxproj", "{B1A92352-6D0A-42BE-927C-1079A7D01119}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -59,6 +61,14 @@ Global
 		{DD9ADF78-AFD2-48EA-8E71-05EC76274A29}.Release|x64.Build.0 = Release|x64
 		{DD9ADF78-AFD2-48EA-8E71-05EC76274A29}.Release|x86.ActiveCfg = Release|Win32
 		{DD9ADF78-AFD2-48EA-8E71-05EC76274A29}.Release|x86.Build.0 = Release|Win32
+		{B1A92352-6D0A-42BE-927C-1079A7D01119}.Debug|x64.ActiveCfg = Debug|x64
+		{B1A92352-6D0A-42BE-927C-1079A7D01119}.Debug|x64.Build.0 = Debug|x64
+		{B1A92352-6D0A-42BE-927C-1079A7D01119}.Debug|x86.ActiveCfg = Debug|Win32
+		{B1A92352-6D0A-42BE-927C-1079A7D01119}.Debug|x86.Build.0 = Debug|Win32
+		{B1A92352-6D0A-42BE-927C-1079A7D01119}.Release|x64.ActiveCfg = Release|x64
+		{B1A92352-6D0A-42BE-927C-1079A7D01119}.Release|x64.Build.0 = Release|x64
+		{B1A92352-6D0A-42BE-927C-1079A7D01119}.Release|x86.ActiveCfg = Release|Win32
+		{B1A92352-6D0A-42BE-927C-1079A7D01119}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

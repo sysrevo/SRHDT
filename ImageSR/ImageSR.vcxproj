@@ -164,29 +164,19 @@
     <ClInclude Include="imgsr_system.h" />
     <ClInclude Include="node.h" />
     <ClInclude Include="settings.h" />
-    <ClInclude Include="status_struct.h" />
-    <ClInclude Include="tree_learn_helper.h" />
     <ClInclude Include="tree_serializer.h" />
-    <ClInclude Include="utils_image.h" />
-    <ClInclude Include="utils_math.h" />
     <ClInclude Include="utils_rapidjson.h" />
-    <ClInclude Include="utils_logger.h" />
-    <ClInclude Include="utils_filesys.h" />
     <ClInclude Include="training_data.h" />
     <ClInclude Include="tree.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
-    <ClInclude Include="utils_vector_rotator.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="image_reader.cpp" />
     <ClCompile Include="tree.cpp" />
     <ClCompile Include="tree_predict.cpp" />
-    <ClCompile Include="utils_math.cpp" />
     <ClCompile Include="utils_rapidjson.cpp" />
-    <ClCompile Include="utils_logger.cpp" />
     <ClCompile Include="node.cpp" />
-    <ClCompile Include="utils_image.cpp" />
     <ClCompile Include="training_data.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
@@ -194,13 +184,16 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="utils_filesys.cpp" />
     <ClCompile Include="tree_learn.cpp" />
     <ClCompile Include="rapid_json_serializer.cpp" />
-    <ClCompile Include="utils_vector_rotator.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Natvis Include="eigen_image_watch.natvis" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Utils\Utils.vcxproj">
+      <Project>{b1a92352-6d0a-42be-927c-1079a7d01119}</Project>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets" />

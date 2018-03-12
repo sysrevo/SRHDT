@@ -1,7 +1,6 @@
 ﻿#include "stdafx.h"
 #include "CppUnitTest.h"
-#include "../ImageSR/utils_image.h"
-#include "../ImageSR/utils_vector_rotator.h"
+#include "../Utils/utils.h"
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 using namespace imgsr;
 using namespace imgsr::utils;
@@ -88,7 +87,7 @@ public:
             ++count;
         }
 
-        utils::VectorRotator rotator(6);
+        utils::math::VectorRotator rotator(6);
 
         ERowVec original_pat_vec = image::VectorizePatch(pat);
         for (int i = 0; i < 3; ++i)

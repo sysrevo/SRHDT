@@ -1,5 +1,5 @@
 ﻿#pragma once
-#include "stdafx.h"
+#include "../Utils/common.h"
 #include "image_reader.h"
 #include "settings.h"
 #include "binary_test.h"

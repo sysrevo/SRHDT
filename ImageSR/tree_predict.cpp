@@ -1,12 +1,12 @@
 ﻿#include "stdafx.h"
 #include "tree.h"
-#include "utils_image.h"
-#include "utils_vector_rotator.h"
+#include "../Utils/utils.h"
 
 using namespace imgsr;
 using namespace imgsr::utils;
+using utils::math::VectorRotator;
 
-utils::VectorRotator rotator(1);
+VectorRotator rotator(1);
 
 Mat DTree::PredictImage(const Mat & in_low, cv::Size size) const
 {

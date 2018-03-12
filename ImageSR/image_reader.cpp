@@ -1,6 +1,6 @@
 ﻿#include "stdafx.h"
 #include "image_reader.h"
-#include "utils_math.h"
+#include "../Utils/utils.h"
 
 using namespace imgsr;
 using namespace utils;

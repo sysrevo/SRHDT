@@ -1,8 +1,8 @@
 ﻿#include "stdafx.h"
 #include "CppUnitTest.h"
-
+#include "../Utils/utils.h"
+#include "../ImageSR/settings.h"
 #include "../ImageSR/training_data.h"
-#include "../ImageSR/utils_image.h"
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 using namespace imgsr;

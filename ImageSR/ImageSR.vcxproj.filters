@@ -12,23 +12,14 @@
     <Filter Include="源文件\system">
       <UniqueIdentifier>{9bfa331c-c3d4-4e26-866c-749fb5095e5c}</UniqueIdentifier>
     </Filter>
-    <Filter Include="源文件\system\utils">
-      <UniqueIdentifier>{55019601-0064-4fd0-84a6-f81abe24f467}</UniqueIdentifier>
-    </Filter>
     <Filter Include="头文件">
       <UniqueIdentifier>{9cc0e218-9677-4f1d-a923-b646d31a858b}</UniqueIdentifier>
     </Filter>
     <Filter Include="头文件\system">
       <UniqueIdentifier>{9374fa8f-0d64-43ad-8da2-db0e16244367}</UniqueIdentifier>
     </Filter>
-    <Filter Include="头文件\system\utils">
-      <UniqueIdentifier>{e5bd6802-8dee-4147-9c9c-f1d727592291}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="utils_logger.h">
-      <Filter>头文件\system\utils</Filter>
-    </ClInclude>
     <ClInclude Include="stdafx.h">
       <Filter>头文件</Filter>
     </ClInclude>
@@ -37,9 +28,6 @@
     </ClInclude>
     <ClInclude Include="training_data.h">
       <Filter>头文件\system</Filter>
-    </ClInclude>
-    <ClInclude Include="utils_rapidjson.h">
-      <Filter>头文件\system\utils</Filter>
     </ClInclude>
     <ClInclude Include="tree.h">
       <Filter>头文件\system</Filter>
@@ -59,25 +47,10 @@
     <ClInclude Include="settings.h">
       <Filter>头文件\system</Filter>
     </ClInclude>
-    <ClInclude Include="tree_learn_helper.h">
-      <Filter>头文件\system\utils</Filter>
-    </ClInclude>
-    <ClInclude Include="utils_vector_rotator.h">
-      <Filter>头文件\system\utils</Filter>
-    </ClInclude>
-    <ClInclude Include="utils_math.h">
-      <Filter>头文件\system\utils</Filter>
-    </ClInclude>
-    <ClInclude Include="utils_image.h">
-      <Filter>头文件\system\utils</Filter>
-    </ClInclude>
-    <ClInclude Include="utils_filesys.h">
-      <Filter>头文件\system\utils</Filter>
-    </ClInclude>
-    <ClInclude Include="status_struct.h">
+    <ClInclude Include="imgsr_system.h">
       <Filter>头文件\system</Filter>
     </ClInclude>
-    <ClInclude Include="imgsr_system.h">
+    <ClInclude Include="utils_rapidjson.h">
       <Filter>头文件\system</Filter>
     </ClInclude>
   </ItemGroup>
@@ -85,17 +58,8 @@
     <ClCompile Include="stdafx.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="utils_logger.cpp">
-      <Filter>源文件\system\utils</Filter>
-    </ClCompile>
-    <ClCompile Include="utils_image.cpp">
-      <Filter>源文件\system\utils</Filter>
-    </ClCompile>
     <ClCompile Include="training_data.cpp">
       <Filter>源文件\system</Filter>
-    </ClCompile>
-    <ClCompile Include="utils_rapidjson.cpp">
-      <Filter>源文件\system\utils</Filter>
     </ClCompile>
     <ClCompile Include="rapid_json_serializer.cpp">
       <Filter>源文件\system</Filter>
@@ -112,16 +76,10 @@
     <ClCompile Include="image_reader.cpp">
       <Filter>源文件\system</Filter>
     </ClCompile>
-    <ClCompile Include="utils_math.cpp">
-      <Filter>源文件\system\utils</Filter>
-    </ClCompile>
-    <ClCompile Include="utils_vector_rotator.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="utils_filesys.cpp">
-      <Filter>源文件\system\utils</Filter>
-    </ClCompile>
     <ClCompile Include="tree.cpp">
+      <Filter>源文件\system</Filter>
+    </ClCompile>
+    <ClCompile Include="utils_rapidjson.cpp">
       <Filter>源文件\system</Filter>
     </ClCompile>
   </ItemGroup>

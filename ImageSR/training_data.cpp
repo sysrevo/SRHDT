@@ -1,8 +1,6 @@
 ﻿#include "stdafx.h"
 #include "training_data.h"
-#include "utils_math.h"
-#include "utils_image.h"
-#include "utils_logger.h"
+#include "../Utils/utils.h"
 
 using namespace imgsr;
 using namespace utils;

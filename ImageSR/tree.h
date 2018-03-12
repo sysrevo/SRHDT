@@ -1,5 +1,4 @@
 ﻿#pragma once
-#include "status_struct.h"
 #include "node.h"
 #include "imgsr_system.h"
 

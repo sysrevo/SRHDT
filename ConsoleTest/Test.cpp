@@ -1,11 +1,8 @@
 ﻿#include <thread>
 #include <chrono>
 #include "Test.h"
+#include "../Utils/utils.h"
 #include "../ImageSR/tree.h"
-#include "../ImageSR/utils_logger.h"
-#include "../ImageSR/utils_math.h"
-#include "../ImageSR/utils_filesys.h"
-#include "../ImageSR/utils_image.h"
 #include "../ImageSR/image_reader.h"
 #include "../ImageSR/tree_serializer.h"
 
@@ -38,7 +35,7 @@ ImagesPair GetHighAndCreateLow(const string & dir_path, int max_num = 0,
 {
     auto high_imgs = FileImageReader::Create(func_high);
 
-    vector<string> files = filesys::GetFilesInDir(dir_path);
+    vector<string> files = utils::filesys::GetFilesInDir(dir_path);
     if (max_num > 0 && files.size() > max_num) files.resize(max_num);
     high_imgs->Set(files);
 
