@@ -2,6 +2,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <algorithm>
 
 using std::cout;
 using std::cin;
@@ -35,6 +36,8 @@ int main()
     {
 		cout << "Input test case names, end with #" << endl;
 		vector<string> imgs_name;
+		std::sort(imgs_name.begin(), imgs_name.end());
+
 		string tmp;
 		while (true)
 		{

@@ -28,7 +28,7 @@ struct TestCase
 };
 
 TestCase GetHighAndCreateLow(const string & dir_path, int max_num = 0,
-    ImageReader::HandleFunc func_high = nullptr)
+    ImageReader::HandleFunc func_high = nullptr, int times = 2)
 {
     auto high_imgs = FileImageReader::Create(func_high);
 
@@ -36,10 +36,10 @@ TestCase GetHighAndCreateLow(const string & dir_path, int max_num = 0,
     if (max_num > 0 && files.size() > max_num) files.resize(max_num);
     high_imgs->Set(files);
 
-	auto low_imgs = HandlerImageReader::Create([](Mat* img)
+	auto low_imgs = HandlerImageReader::Create([times](Mat* img)
 	{
 		Size size = img->size();
-		cv::resize(*img, *img, size / 2, 0, 0, cv::INTER_AREA);
+		cv::resize(*img, *img, size / times, 0, 0, cv::INTER_AREA);
 	});
     low_imgs->SetInput(high_imgs);
 
@@ -119,11 +119,6 @@ void Test::Init()
 
 	{
 		const auto& path_hr = "D:\\test\\images\\bsd100";
-		auto clip_one_pixel = [](Mat* img_ptr)
-		{
-			Mat & img = *img_ptr;
-			img = Mat(img, cv::Rect(0, 0, img.cols - 1, img.rows - 1));
-		};
 		TestCase test_case = GetHighAndCreateLow(path_hr, 50);
 		test_case.json_path = "D:\\test\\bsd100.json";
 		test_cases["bsd100"] = test_case;
@@ -180,6 +175,25 @@ void Test::Init()
 		TestCase test_case = GetHighAndLow(path_lr, path_hr, nullptr, clip_one_pixel);
 		test_case.json_path = "D:\\test\\nice_bsd100_3.json";
 		test_cases["nice_bsd100_3"] = test_case;
+	}
+
+	{
+		const auto& path_hr = "D:\\test\\images\\bsd100";
+		TestCase test_case = GetHighAndCreateLow(path_hr, 50, nullptr, 3);
+		test_case.json_path = "D:\\test\\bsd100_3.json";
+		test_cases["bsd100_3"] = test_case;
+	}
+	{
+		const auto& path_hr = "D:\\test\\images\\set5";
+		TestCase test_case = GetHighAndCreateLow(path_hr, 50, nullptr, 3);
+		test_case.json_path = "D:\\test\\set5_3.json";
+		test_cases["set5_3"] = test_case;
+	}
+	{
+		const auto& path_hr = "D:\\test\\images\\set14";
+		TestCase test_case = GetHighAndCreateLow(path_hr, 50, nullptr, 3);
+		test_case.json_path = "D:\\test\\set14_3.json";
+		test_cases["set14_3"] = test_case;
 	}
 }
 
