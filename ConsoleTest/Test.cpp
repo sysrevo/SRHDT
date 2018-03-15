@@ -1,5 +1,6 @@
 ﻿#include <thread>
 #include <chrono>
+#include <unordered_map>
 #include "Test.h"
 #include "../Utils/utils.h"
 #include "../ImageSR/tree.h"
@@ -14,23 +15,19 @@ using std::stringstream;
 using std::cout;
 using std::endl;
 using std::fstream;
+using std::unordered_map;
 
 using namespace imgsr;
 using namespace utils;
 
-struct ImagesPair
+struct TestCase
 {
+	string json_path;
     Ptr<ImageReader> low;
     Ptr<ImageReader> high;
 };
 
-void GetLowRes(Mat* img)
-{
-    Size size = img->size();
-    cv::resize(*img, *img, size / 2, 0, 0, cv::INTER_LINEAR);
-}
-
-ImagesPair GetHighAndCreateLow(const string & dir_path, int max_num = 0,
+TestCase GetHighAndCreateLow(const string & dir_path, int max_num = 0,
     ImageReader::HandleFunc func_high = nullptr)
 {
     auto high_imgs = FileImageReader::Create(func_high);
@@ -39,61 +36,180 @@ ImagesPair GetHighAndCreateLow(const string & dir_path, int max_num = 0,
     if (max_num > 0 && files.size() > max_num) files.resize(max_num);
     high_imgs->Set(files);
 
-    auto low_imgs = HandlerImageReader::Create(GetLowRes);
+	auto low_imgs = HandlerImageReader::Create([](Mat* img)
+	{
+		Size size = img->size();
+		cv::resize(*img, *img, size / 2, 0, 0, cv::INTER_AREA);
+	});
     low_imgs->SetInput(high_imgs);
 
-    ImagesPair res;
+    TestCase res;
     res.low = low_imgs;
     res.high = high_imgs;
     return res;
 }
 
-void ClipOnePixel(Mat* img_ptr)
+TestCase GetHighAndLow(const string& lr_dir, const string& hr_dir, 
+	ImageReader::HandleFunc low_func = nullptr, ImageReader::HandleFunc high_func = nullptr)
 {
-    Mat & img = *img_ptr;
-    img = Mat(img, cv::Rect(0, 0, img.cols - 1, img.rows - 1));
+	auto low_imgs = FileImageReader::Create(low_func);
+	auto high_imgs = FileImageReader::Create(high_func);
+
+	low_imgs->Set(filesys::GetFilesInDir(lr_dir));
+	high_imgs->Set(filesys::GetFilesInDir(hr_dir));
+
+	TestCase res;
+	res.low = low_imgs;
+	res.high = high_imgs;
+	return res;
 }
-
-const string path_set5 = "D:\\test\\images\\set5";
-const string path_set14 = "D:\\test\\images\\set14";
-const string path_bsd100 = "D:\\test\\images\\bsd100";
-const string path_training = "D:\\test\\images\\training_images";
-//const string path_bsd100 = "D:\\test\\SRHDT\\SRHDT\\2xBSD100-Bicubic\\hr";
-
-const string json_path = "D:\\test\\jsontest_hdt.json";
-
+unordered_map<string, TestCase> test_cases;
 Ptr<HDTrees> hdtrees = nullptr;
-ImagesPair set5, set14, bsd100;
-ImagesPair training;
 
-void Init()
+void Test::Init()
 {
-    Mat img = cv::imread("D:\\test\\SRHDT\\SRHDT\\2xSet5-Bicubic\\baby[1-Original].bmp");
-    Mat edge = utils::image::GetEdgeMap(img, 20);
-    cv::imwrite("D:\\test\\SRHDT\\SRHDT\\2xSet5-Bicubic\\edge.png", edge);
-
     Settings settings;
     settings.layers = 4;
     settings.fuse_option = Settings::Rotate;
-    settings.min_n_patches = 1000;
+    settings.min_n_patches = 1024;
+	settings.patch_size = 6;
+	settings.overlap = 4;
 
     hdtrees = make_shared<HDTrees>(settings);
 
-    set5 = GetHighAndCreateLow(path_set5);
-    set14 = GetHighAndCreateLow(path_set14);
-    bsd100 = GetHighAndCreateLow(path_bsd100);
-    training = GetHighAndCreateLow(path_training, 200);
+	{
+		const auto& path_lr = "D:\\test\\images\\nice\\set5\\lr";
+		const auto& path_hr = "D:\\test\\images\\nice\\set5\\hr";
+		TestCase test_case = GetHighAndLow(path_lr, path_hr);
+		test_case.json_path = "D:\\test\\nice_set5.json";
+		test_cases["nice_set5"] = test_case;
+	}
+
+	{
+		const auto& path_lr = "D:\\test\\images\\nice\\set14\\lr";
+		const auto& path_hr = "D:\\test\\images\\nice\\set14\\hr";
+		TestCase test_case = GetHighAndLow(path_lr, path_hr);
+		test_case.json_path = "D:\\test\\nice_set14.json";
+		test_cases["nice_set14"] = test_case;
+	}
+
+	{
+		const auto& path_lr = "D:\\test\\images\\nice\\bsd100\\lr";
+		const auto& path_hr = "D:\\test\\images\\nice\\bsd100\\hr";
+		auto clip_one_pixel = [](Mat* img_ptr)
+		{
+			Mat & img = *img_ptr;
+			img = Mat(img, cv::Rect(0, 0, img.cols - 1, img.rows - 1));
+		};
+		TestCase test_case = GetHighAndLow(path_lr, path_hr, nullptr, clip_one_pixel);
+		test_case.json_path = "D:\\test\\nice_bsd100.json";
+		test_cases["nice_bsd100"] = test_case;
+	}
+
+	{
+		const auto& path_hr = "D:\\test\\images\\manga";
+		TestCase manga = GetHighAndCreateLow(path_hr, 0, [](Mat* img_ptr)
+		{
+			Mat& img = *img_ptr;
+			cv::resize(img, img, img.size() / 4, 0, 0, cv::INTER_AREA);
+		});
+		manga.json_path = "D:\\test\\manga.json";
+		test_cases["manga"] = manga;
+	}
+
+	{
+		const auto& path_hr = "D:\\test\\images\\bsd100";
+		auto clip_one_pixel = [](Mat* img_ptr)
+		{
+			Mat & img = *img_ptr;
+			img = Mat(img, cv::Rect(0, 0, img.cols - 1, img.rows - 1));
+		};
+		TestCase test_case = GetHighAndCreateLow(path_hr, 50);
+		test_case.json_path = "D:\\test\\bsd100.json";
+		test_cases["bsd100"] = test_case;
+	}
+
+	{
+		const auto& path_hr = "D:\\test\\images\\set5";
+		auto clip_one_pixel = [](Mat* img_ptr)
+		{
+			Mat & img = *img_ptr;
+			img = Mat(img, cv::Rect(0, 0, img.cols - 1, img.rows - 1));
+		};
+		TestCase test_case = GetHighAndCreateLow(path_hr, 50);
+		test_case.json_path = "D:\\test\\set5.json";
+		test_cases["set5"] = test_case;
+	}
+
+	{
+		const auto& path_hr = "D:\\test\\images\\set14";
+		auto clip_one_pixel = [](Mat* img_ptr)
+		{
+			Mat & img = *img_ptr;
+			img = Mat(img, cv::Rect(0, 0, img.cols - 1, img.rows - 1));
+		};
+		TestCase test_case = GetHighAndCreateLow(path_hr, 50);
+		test_case.json_path = "D:\\test\\set14.json";
+		test_cases["set14"] = test_case;
+	}
+
+	{
+		const auto& path_lr = "D:\\test\\images\\nice\\set5_3\\lr";
+		const auto& path_hr = "D:\\test\\images\\nice\\set5_3\\hr";
+		TestCase test_case = GetHighAndLow(path_lr, path_hr);
+		test_case.json_path = "D:\\test\\nice_set5_3.json";
+		test_cases["nice_set5_3"] = test_case;
+	}
+
+	{
+		const auto& path_lr = "D:\\test\\images\\nice\\set14_3\\lr";
+		const auto& path_hr = "D:\\test\\images\\nice\\set14_3\\hr";
+		TestCase test_case = GetHighAndLow(path_lr, path_hr);
+		test_case.json_path = "D:\\test\\nice_set14_3.json";
+		test_cases["nice_set14_3"] = test_case;
+	}
+
+	{
+		const auto& path_lr = "D:\\test\\images\\nice\\bsd100_3\\lr";
+		const auto& path_hr = "D:\\test\\images\\nice\\bsd100_3\\hr";
+		auto clip_one_pixel = [](Mat* img_ptr)
+		{
+			Mat & img = *img_ptr;
+			img = Mat(img, cv::Rect(0, 0, img.cols - 1, img.rows - 1));
+		};
+		TestCase test_case = GetHighAndLow(path_lr, path_hr, nullptr, clip_one_pixel);
+		test_case.json_path = "D:\\test\\nice_bsd100_3.json";
+		test_cases["nice_bsd100_3"] = test_case;
+	}
 }
 
-void Learn()
+std::vector<std::string> Test::GetTestCaseNames()
 {
+	vector<string> names;
+	names.reserve(test_cases.size());
+
+	for (const auto& item : test_cases)
+	{
+		names.push_back(item.first);
+	}
+
+	return names;
+}
+
+void Test::Learn(const string& name)
+{
+	const auto& test_case = test_cases[name];
+	const Ptr<ImageReader>& lows = test_case.low;
+	const Ptr<ImageReader>& highs = test_case.high;
+	const string& json_path = test_case.json_path;
+
     // learning
-    const HDTrees::LearnStatus* status;
+    const HDTrees::LearnStatus* status = nullptr;
     bool is_finish = false;
-    std::thread t([&is_finish, &status]()
+	status = &hdtrees->GetLearnStatus();
+    std::thread t([&is_finish, &status, lows, highs]()
     {
-        hdtrees->Learn(*training.low, *training.high);
-        status = &hdtrees->GetLearnStatus();
+        hdtrees->Learn(*lows, *highs);
         is_finish = true;
     });
 
@@ -111,17 +227,21 @@ void Learn()
         }
 
         // wipe things out
-        char tmp[64];
+        char tmp[80];
         memset(tmp, ' ', sizeof(tmp));
-        tmp[63] = 0;
+        tmp[sizeof(tmp) - 1] = 0;
         cout << tmp << "\r";
         
         // output status
-        cout << "curr_layer: " << status->layer
-            << ", samples" << status->tree->n_samples
-            << ", non-leaves:" << status->tree->n_nonleaf
-            << ", leaves:" << status->tree->n_leaf
-            << ", n_test:" << status->tree->n_curr_test;
+		cout << "curr_layer: " << status->layer;
+		if (status->tree)
+		{
+			cout
+				<< ", samples" << status->tree->n_samples
+				<< ", non-leaves:" << status->tree->n_nonleaf
+				<< ", leaves:" << status->tree->n_leaf
+				<< ", n_test:" << status->tree->n_curr_test;
+		}
         cout.flush();
         std::this_thread::sleep_for(std::chrono::milliseconds(50));
     }
@@ -132,34 +252,43 @@ void Learn()
     json.Serialize(*hdtrees, json_path);
 }
 
-void Test()
+void Test::Test(const string& test_name, const std::vector<std::string>& case_names)
 {
+	const auto& test_case = test_cases[test_name];
+	const string& json_path = test_case.json_path;
+
     RapidJsonSerializer json;
     {
         json.Deserialize(json_path, hdtrees.get());
         cout << "hdt trees loaded" << endl;
     }
 
+	for (const auto& case_name : case_names)
+	{
+		const auto& test_imgs = test_cases[case_name];
+		const Ptr<ImageReader>& imgs_low = test_imgs.low;
+		const Ptr<ImageReader>& imgs_high = test_imgs.high;
 
-    Ptr<HandlerImageReader> imgs_low = HandlerImageReader::Create();
-    imgs_low->SetInput({ bsd100.low, set5.low, set14.low });
-    Ptr<HandlerImageReader> imgs_high = HandlerImageReader::Create();
-    imgs_high->SetInput({ bsd100.high, set5.high, set14.high });
+		for (int i = 0; i < imgs_low->Size(); ++i)
+		{
+			Mat high = imgs_high->Get(i);
+			Mat low = imgs_low->Get(i);
 
-    for (int i = 0; i < imgs_low->Size(); ++i)
-    {
-        Mat high = imgs_high->Get(i);
-        Mat low = imgs_low->Get(i);
+			high = image::ResizeImage(high, high.size(), hdtrees->settings.patch_size, hdtrees->settings.overlap);
+			low = image::ResizeImage(low, low.size(), hdtrees->settings.patch_size, hdtrees->settings.overlap);
 
-        //Mat out = MonitorProcessTest(low, high.size());
-        Mat out = hdtrees->PredictImage(low, high.size());
+			//Mat out = MonitorProcessTest(low, high.size());
+			Mat out = hdtrees->PredictImage(low, high.size());
 
-        Mat h0;
-        cv::resize(low, h0, high.size(), 0, 0, cv::INTER_CUBIC);
-        cout << "PSNR: " << image::GetPSNR(out, high) - image::GetPSNR(h0, high) << endl;
-        cv::imshow("low", low);
-        cv::imshow("out", out);
-        cv::imshow("high", high);
-        cv::waitKey(0);
-    }
+			Mat h0;
+			cv::resize(low, h0, high.size(), 0, 0, cv::INTER_CUBIC);
+			cout << "PSNR: " << image::GetPSNR(out, high) - image::GetPSNR(h0, high) << endl;
+			cv::imshow("low", h0);
+			cv::imshow("out", out);
+			cv::imshow("high", high);
+			cv::waitKey(0);
+		}
+	}
+
+    
 }

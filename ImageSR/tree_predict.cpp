@@ -8,18 +8,17 @@ using utils::math::VectorRotator;
 
 VectorRotator rotator(1);
 
-Mat DTree::PredictImage(const Mat & in_low, cv::Size size) const
+Mat DTree::PredictImage(const Mat & in_img, cv::Size size) const
 {
     rotator = VectorRotator(settings.patch_size);
     using namespace cv;
 
-    Mat low = image::ResizeImage(in_low, size, settings.patch_size, settings.overlap);
+    Mat img = image::ResizeImage(in_img, size, settings.patch_size, settings.overlap);
 
-    image::YCrCbImage imgs = image::SplitYCrcb(low);
-    Mat edge = image::GetEdgeMap(imgs.y, settings.canny_edge_threshold);
+    image::YCrCbImage channels = image::SplitYCrcb(img);
+    Mat edge = image::GetEdgeMap(channels.y, settings.canny_edge_threshold);
 
-    Mat gray = image::MatUchar2Float(imgs.y);
-    Mat gray_res = Mat(gray);
+    Mat gray = image::MatUchar2Float(channels.y);
 
     Mat count_map = Mat(gray.size(), image::kFloatImageType, cv::Scalar(0));
     
@@ -27,43 +26,40 @@ Mat DTree::PredictImage(const Mat & in_low, cv::Size size) const
     // 0 - patches for gray image
     // 1 - patches for output gray image
     // 2 - patches for count map
-    auto pats = image::GetPatchesMulti(vector<Mat>({ gray, gray_res, count_map }), edge, settings.patch_size, settings.overlap);
+    auto patches = image::GetPatchesMulti(vector<Mat>({ gray, count_map }), edge, settings.patch_size, settings.overlap);
     
-    vector<Mat>& pats_in = pats[0];
-    vector<Mat>& pats_out = pats[1];
-    vector<Mat>& pats_count = pats[2]; 
+    vector<Mat>& patches_gray = patches[0];
+    vector<Mat>& patches_count = patches[1]; 
 
-    size_t n_pats = pats_in.size();
+    size_t n_pats = patches_gray.size();
 
     // init buffer for result
-    vector<Mat> res_buf;
-    res_buf.resize(n_pats);
-    for (auto & pat : res_buf)
-        pat = Mat(pats_in[0].size(), pats_in[0].type(), cv::Scalar(0));
+    vector<Mat> result_buf;
+    result_buf.resize(n_pats);
+    for (auto & pat : result_buf)
+        pat = Mat(patches_gray[0].size(), patches_gray[0].type(), cv::Scalar(0));
 
     // calculate predicted result for each patch
     #pragma omp parallel for num_threads(4)
     for (int i = 0; i < n_pats; ++i)
     {
-        res_buf[i] = PredictPatch(pats_in[i]);
+        result_buf[i] = PredictPatch(patches_gray[i]);
     }
 
     // try to merge result from predicted patches
     {
         // count map is for getting an average value 
         // from all possible predicted color
-        for (auto & count_pat : pats_count)
+        for (auto & count_pat : patches_count)
             count_pat += 1;
 
         // clear the edge area in the output image
         // and add all result together
-        for (auto & pat_out : pats_out)
-            pat_out = cv::Scalar(0);
+        for (auto & pat : patches_gray)
+            pat = cv::Scalar(0);
 
         for (int i = 0; i < n_pats; ++i)
-        {
-            pats_out[i] += res_buf[i];
-        }
+            patches_gray[i] += result_buf[i];
     }
     
     for (int r = 0; r < count_map.rows; ++r)
@@ -77,9 +73,10 @@ Mat DTree::PredictImage(const Mat & in_low, cv::Size size) const
         }
     }
 
-    imgs.y = image::MatFloat2Uchar(gray);
-    Mat res = image::Merge(imgs);
-    return res;
+    gray = image::MatFloat2Uchar(gray);
+	channels.y = gray;
+    img = image::Merge(channels);
+    return img;
 }
 
 Mat DTree::PredictPatch(const Mat & pat_in) const
@@ -89,12 +86,12 @@ Mat DTree::PredictPatch(const Mat & pat_in) const
     int len_vec = pat_in.rows * pat_in.cols;
     int n_models = 0;
 
+	ERowVec x = image::VectorizePatch(pat_in);
     EMat model = EMat::Zero(len_vec, len_vec);
     {
         Size size = Size(settings.patch_size, settings.patch_size);
-        ERowVec pat_vec = image::VectorizePatch(pat_in);
         {
-            auto leaf = root->ReachLeafNode(pat_vec);
+            auto leaf = root->ReachLeafNode(x);
             model += leaf->c;
             n_models += 1;
         }
@@ -102,10 +99,9 @@ Mat DTree::PredictPatch(const Mat & pat_in) const
         if (settings.fuse_option == Settings::Rotate)
         {
             const int n_rotates = 3;
-            ERowVec vec = pat_vec;
             for (int i = 0; i < n_rotates; ++i)
             {
-                vec = rotator.RotateVector(vec, 1);
+				ERowVec vec = rotator.RotateVector(vec, i + 1);
                 auto leaf = root->ReachLeafNode(vec);
                 EMat tmp_model = rotator.RotateModel(leaf->c, i + 1);
                 model += tmp_model;
@@ -113,7 +109,6 @@ Mat DTree::PredictPatch(const Mat & pat_in) const
             n_models += n_rotates;
         }
     }
-    ERowVec x = image::VectorizePatch(pat_in);
     ERowVec res = x * model / n_models;
     return image::DevectorizePatch(res, settings.patch_size);
 }

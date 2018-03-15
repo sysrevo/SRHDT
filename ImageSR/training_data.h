@@ -26,64 +26,46 @@ namespace imgsr
         size_t GetLeftPatchesNumber(const BinaryTest& test) const;
 
 
-        void Reserve(size_t patch_num);
+        //void Reserve(size_t patch_num);
         void Resize(size_t num);
-        void ShrinkToFit();
+        //void ShrinkToFit();
         void Clear();
-        void ClearAndRelease();
-        void Append(const TrainingData & data);
+        //void ClearAndRelease();
+        //void Append(const TrainingData & data);
 
-        void PushBackPatch(const Mat & low_patch, const Mat & high_patch);
-        void PushBackImage(const Mat & in_low, const Mat & in_high);
-        void PushBackImages(const ImageReader& low_imgs_reader, const ImageReader& high_imgs_reader, int n_threads = 1);
+        //void PushBackPatch(const Mat & low_patch, const Mat & high_patch);
+        //void PushBackImage(const Mat & in_low, const Mat & in_high);
+        //void PushBackImages(const ImageReader& low_imgs_reader, const ImageReader& high_imgs_reader, int n_threads = 1);
+		void SetImages(const vector<Mat>& lows, const vector<Mat>& highs);
 
         inline size_t Num() const {
-            return data_x.size() / len_vec;
+			return data_x.rows();
         }
 
         inline int LengthPatchVector() const {
             return len_vec;
         }
 
-#define RETURN_VEC(name, i)\
-	return EVec::Map(data_##name.data() + i * len_vec, len_vec);
+		inline auto X(size_t row) { return MatX().row(row); }
+		inline auto Y(size_t row) { return MatY().row(row); }
 
-        inline auto X(size_t i) { RETURN_VEC(x, i); }
-        inline auto X(size_t i) const { RETURN_VEC(x, i); }
-
-        inline auto Y(size_t i) { RETURN_VEC(y, i); }
-        inline auto Y(size_t i) const { RETURN_VEC(y, i); }
+        inline auto X(size_t row) const { return MatX().row(row); }
+		inline auto Y(size_t row) const { return MatY().row(row); }
 
         inline auto BackX() { assert(Num() > 0); return X(Num() - 1); }
         inline auto BackY() { assert(Num() > 0); return Y(Num() - 1); }
 
-#undef RETURN_VEC
-
-#define RETURN_MAT(name) return EMat::Map(data_##name.data(), len_vec, Num());
-
-        inline auto MatX() { RETURN_MAT(x); }
-        inline auto MatX() const { RETURN_MAT(x); }
-
-        inline auto MatY() { RETURN_MAT(y); }
-        inline auto MatY() const { RETURN_MAT(y); }
-
-#undef RETURN_MAT
-
-#define RETURN_ROW_MAT(name) return ERowMat::Map(data_##name.data(), Num(), len_vec);
-
-        inline auto RowMatX() { RETURN_ROW_MAT(x); }
-        inline auto RowMatX() const { RETURN_ROW_MAT(x); }
-
-        inline auto RowMatY() { RETURN_ROW_MAT(y); }
-        inline auto RowMatY() const { RETURN_ROW_MAT(y); }
-
-#undef RETURN_ROW_MAT
-
+		inline EMat& MatX() { return data_x; }
+		inline EMat& MatY() { return data_y; }
+        inline const EMat& MatX() const { return data_x; }
+		inline const EMat& MatY() const { return data_y; }
 
         const Settings settings;
         const int len_vec;
     private:
-        vector<Real> data_x;
-        vector<Real> data_y;
+		EMat data_x;
+		EMat data_y;
+        //vector<Real> data_x;
+        //vector<Real> data_y;
     };
 }

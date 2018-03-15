@@ -1,6 +1,8 @@
 ﻿#include "stdafx.h"
 #include "CppUnitTest.h"
 #include "../Utils/utils.h"
+#include "../UtilsCudaHelper/cuda_calculator.h"
+
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 using namespace imgsr;
 using namespace imgsr::utils;
@@ -118,4 +120,37 @@ private:
         }
         return output;
     }
+};
+
+TEST_CLASS(CudaTest)
+{
+	TEST_METHOD(TestCudaMul)
+	{
+		Logger::WriteMessage(CudaCalculator::GetDeviceName().c_str());
+
+		EMat a = EMat::Random(512, 256);
+		EMat b = EMat::Random(256, 128);
+
+		EMat exp = a * b;
+		CudaMat cuda_a(a);
+		CudaMat cuda_b(b);
+		CudaMat cuda_c;
+		CudaCalculator::Mul(cuda_a, cuda_b, &cuda_c);
+		EMat res = cuda_c.GetMat();
+
+		Assert::IsTrue(exp.isApprox(res));
+	}
+
+	TEST_METHOD(TestCudaMul2)
+	{
+		Logger::WriteMessage(CudaCalculator::GetDeviceName().c_str());
+
+		EMat a = EMat::Random(512, 256);
+		EMat b = EMat::Random(256, 128);
+
+		EMat exp = a * b;
+		EMat res = CudaCalculator::Mul(a, b);
+
+		Assert::IsTrue(exp.isApprox(res));
+	}
 };

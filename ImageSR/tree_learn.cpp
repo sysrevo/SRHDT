@@ -2,6 +2,7 @@
 #include "tree.h"
 #include "../Utils/utils.h"
 #include "training_data.h"
+#include "../UtilsCudaHelper/cuda_calculator.h"
 
 using namespace imgsr;
 using namespace imgsr::utils;
@@ -24,17 +25,32 @@ inline EMat GetRegressionModel(const Input1 & x, const Input2 & y, double lamda)
 {
 	EMat xt = x.transpose();
 	EMat tmp_lamda = lamda * ERowMat::Identity(x.cols(), x.cols());
-	EMat c = ((xt * x + tmp_lamda).inverse()) * xt * y;
-	return c;
-}
 
-// return the fitting error at node E
-template<class Input1, class Input2>
-inline Real GetFittingError(const Input1 & y, const Input2 & yr, size_t numSamples)
-{
-	EMat delta = y - yr;
-	auto tmp = delta.squaredNorm();
-	return delta.squaredNorm() / numSamples;
+	EMat c;
+	if (x.rows() * x.cols() <= 360000)
+	{
+		c = ((xt * x + tmp_lamda).inverse()) * xt * y;
+	}
+	else
+	{
+		CudaMat cuda_xt(xt);
+		EMat part1;
+		{ // xt * x
+			CudaMat cuda_x(x);
+			CudaMat res;
+			CudaCalculator::Mul(cuda_xt, cuda_x, &res);
+			part1 = res.GetMat();
+		}
+		EMat part2;
+		{ // xt * y
+			CudaMat cuda_y(y);
+			CudaMat res;
+			CudaCalculator::Mul(cuda_xt, cuda_y, &res);
+			part2 = res.GetMat();
+		}
+		c = (part1 + tmp_lamda).inverse() * part2;
+	}
+	return c;
 }
 
 // return the error reduction R at node j
@@ -44,6 +60,22 @@ inline Real GetErrorReduction(Real ej, size_t nl, Real el, size_t nr, Real er)
 	auto tmp_left = el * nl / nj;
 	auto tmp_right = er * nr / nj;
 	return ej - (tmp_left + tmp_right);
+}
+
+inline Real GetFittingError(const EMat& c, const EMat& x, const EMat& y)
+{
+	EMat yr;
+	if (x.rows() * x.cols() <= 360000)
+	{
+		yr = x * c;
+	}
+	else
+	{
+		yr = CudaCalculator::Mul(x, c);
+	}
+	EMat delta = y - yr;
+	auto tmp = delta.squaredNorm();
+	return delta.squaredNorm() / y.rows();
 }
 
 struct CalculationResult
@@ -62,7 +94,7 @@ CalculationResult DoComplexCalculate(const InputType & x, const InputType & y, R
 	res.num_samples = x.rows();
 	res.c = GetRegressionModel(x, y, lamda);
 	EMat yr = x * res.c;
-	res.fitting_error = GetFittingError(y, yr, res.num_samples);
+	res.fitting_error = GetFittingError(res.c, x, y);
 	return res;
 }
 
@@ -153,10 +185,10 @@ BinaryTestResult GenerateTestWithMaxErrorReduction(
 			samples.Split(test, buf_left, buf_right);
 
 			// do some very complex calculation
-			auto left_x = buf_left->RowMatX();
-			auto left_y = buf_left->RowMatY();
-			auto right_x = buf_right->RowMatX();
-			auto right_y = buf_right->RowMatY();
+			const auto& left_x = buf_left->MatX();
+			const auto& left_y = buf_left->MatY();
+			const auto& right_x = buf_right->MatX();
+			const auto& right_y = buf_right->MatY();
 
 			//MyLogger::debug << "start doing complex calculation..." << endl;
 			CalculationResult res_left = DoComplexCalculate(left_x, left_y, samples.settings.lamda);
@@ -192,7 +224,18 @@ void DTree::Learn(
     if (low_reader.Empty()) return;
 
     Ptr<TrainingData> total_samples = TrainingData::Create(settings);
-    total_samples->PushBackImages(low_reader, high_reader);
+
+	const size_t n_imgs = low_reader.Size();
+
+	vector<Mat> lows(low_reader.Size());
+	for (int i = 0; i < n_imgs; ++i)
+		lows[i] = low_reader.Get(i);
+
+	vector<Mat> highs(high_reader.Size());
+	for (int i = 0; i < n_imgs; ++i)
+		highs[i] = high_reader.Get(i);
+
+    total_samples->SetImages(lows, highs);
 
     Learn(total_samples);
 }
@@ -224,8 +267,8 @@ void DTree::Learn(
         // calculate regression model for this node
 
         CalculationResult node_calc_res = DoComplexCalculate(
-            node->GetSamples()->RowMatX(),
-            node->GetSamples()->RowMatY(),
+            node->GetSamples()->MatX(),
+            node->GetSamples()->MatY(),
             settings.lamda);
 
         if (n_samples < 2 * settings.min_n_patches)
@@ -253,7 +296,7 @@ void DTree::Learn(
                 learn_stat.n_leaf += 1;
             }
         }
-        node->GetSamples()->ClearAndRelease();
+		node->GetSamples()->Clear();
         node = nullptr;
     }
 }
