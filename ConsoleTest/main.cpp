@@ -23,9 +23,11 @@ int main()
 
 	cout << "Select name from below:" << endl;
 	vector<string> names = Test::GetTestCaseNames();
+	std::sort(names.begin(), names.end());
 	for (const auto& name : names) cout << name << endl;
 	string name;
 	cin >> name;
+	cout << endl;
 	cout << "#Name: " << name << endl;
 
     if (learn)
@@ -36,7 +38,6 @@ int main()
     {
 		cout << "Input test case names, end with #" << endl;
 		vector<string> imgs_name;
-		std::sort(imgs_name.begin(), imgs_name.end());
 
 		string tmp;
 		while (true)

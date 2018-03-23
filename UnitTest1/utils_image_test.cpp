@@ -65,7 +65,7 @@ public:
     {
         using namespace cv;
         Mat img = cv::imread("..\\..\\UnitTest1\\test_256_4.png", CV_LOAD_IMAGE_UNCHANGED);
-        img = image::ResizeImage(img, img.size(), 6, 4);
+        img = image::ResizeImageToFitPatchIfNeeded(img, img.size(), 6, 4);
         img = image::SplitYCrcb(img).y;
         img = image::MatUchar2Float(img);
 
@@ -93,7 +93,7 @@ public:
     {
         using namespace cv;
         Mat img = cv::imread("..\\..\\UnitTest1\\test_256_4.png", CV_LOAD_IMAGE_UNCHANGED);
-        img = image::ResizeImage(img, img.size(), 6, 4);
+        img = image::ResizeImageToFitPatchIfNeeded(img, img.size(), 6, 4);
         img = image::SplitYCrcb(img).y;
         img = image::MatUchar2Float(img);
 
@@ -108,4 +108,12 @@ public:
             Assert::AreEqual(count, 0);
         });
     }
+};
+
+TEST_CLASS(TrainingDataTest)
+{
+public:
+	TEST_METHOD(TestUnvectorized)
+	{
+	}
 };

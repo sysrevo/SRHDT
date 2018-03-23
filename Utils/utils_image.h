@@ -1,13 +1,14 @@
 #pragma once
 #include "common.h"
-
+#include "utils_math.h"
 namespace imgsr
 {
 	namespace utils
 	{
 		namespace image
 		{
-			Mat ResizeImage(const Mat & img, cv::Size expected_size, int patch_size, int overlap);
+			Mat ResizeImageToFitPatchIfNeeded(const Mat & img, cv::Size expected_size, int patch_size, int overlap);
+			Mat ResizeImage(const Mat& img, Size size);
 			Mat GetEdgeMap(const Mat& img, double threshold);
 
 			Mat GetLowResImage(const Mat & img, float ratio = 0.5f);
@@ -22,7 +23,7 @@ namespace imgsr
 
 			const int kFloatImageType = CV_64F;
 
-			typedef double FloatMapValue;
+			typedef Real FloatMapValue;
 
 			Mat MatUchar2Float(const Mat & gray_img);
 			Mat MatFloat2Uchar(const Mat & f_gray);
@@ -48,7 +49,7 @@ namespace imgsr
 					auto* p = img.ptr<FloatMapValue>(r);
 					for (int c = 0; c < img.cols; ++c)
 					{
-						p[c] = vec[vec_pos];
+						p[c] = math::Clamp(vec[vec_pos], 0, 1);
 						++vec_pos;
 					}
 				}

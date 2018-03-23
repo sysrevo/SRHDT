@@ -51,3 +51,14 @@ namespace imgsr
 	typedef Eigen::Matrix<Real, Eigen::Dynamic, Eigen::Dynamic, Eigen::ColMajor> EMat;
 	typedef Eigen::Matrix<Real, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> ERowMat;
 }
+
+#define DLL_EXPORT __declspec(dllexport)  
+#define DLL_IMPORT __declspec(dllimport)
+
+#ifdef _MAKE_EXPORT
+	#define DLL_API DLL_EXPORT
+#elif defined _MAKE_IMPORT
+	#define DLL_API DLL_IMPORT
+#else 
+	#define DLL_API
+#endif 

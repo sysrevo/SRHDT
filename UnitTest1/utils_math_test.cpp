@@ -153,4 +153,27 @@ TEST_CLASS(CudaTest)
 
 		Assert::IsTrue(exp.isApprox(res));
 	}
+
+	TEST_METHOD(TestCudaAdd)
+	{
+		vector<double> params = { 1, -1, 0, 2 };
+		for (double alpha : params)
+		{
+			for (double beta : params)
+			{
+				EMat a = EMat::Random(512, 256);
+				EMat b = EMat::Random(512, 256);
+
+				CudaMat cuda_a(a);
+				CudaMat cuda_b(b);
+				CudaMat cuda_c;
+				CudaCalculator::Add(cuda_a, cuda_b, &cuda_c, alpha, beta);
+				EMat res = cuda_c.GetMat();
+
+				EMat exp = alpha * a + beta * b;
+
+				Assert::IsTrue(exp.isApprox(res));
+			}
+		}
+	}
 };

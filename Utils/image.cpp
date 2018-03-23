@@ -85,7 +85,7 @@ cv::Scalar image::GetSSIM(const Mat & i1, const Mat & i2)
 	return mssim;
 }
 
-inline cv::Size GetCorrectSize(cv::Size size, int patch_size, int jump)
+inline Size GetCorrectSize(Size size, int patch_size, int jump)
 {
 	auto func = [patch_size, jump](int n)
 	{
@@ -94,14 +94,29 @@ inline cv::Size GetCorrectSize(cv::Size size, int patch_size, int jump)
 	return cv::Size(func(size.width), func(size.height));
 }
 
-Mat image::ResizeImage(const Mat & img, cv::Size expected_size, int patch_size, int overlap)
+Mat image::ResizeImageToFitPatchIfNeeded(const Mat & img, cv::Size expected_size, int patch_size, int overlap)
 {
 	const int jump = patch_size - overlap;
+	expected_size = GetCorrectSize(expected_size, patch_size, jump);
+	if (img.size() == expected_size) return img;
+	return image::ResizeImage(img, expected_size);
+}
 
-	Mat res;
-	Size size = GetCorrectSize(expected_size, patch_size, jump);
-	cv::resize(img, res, size, 0, 0, cv::INTER_CUBIC);
-	return res;
+Mat image::ResizeImage(const Mat & img, Size size)
+{
+	int method = cv::INTER_LINEAR;
+	Size img_size = img.size();
+	if (img_size.width < size.width && img_size.height < size.height)
+	{ // expand
+		method = cv::INTER_CUBIC;
+	}
+	else if (img_size.width > size.width && img_size.height > size.height)
+	{// shrink
+		method = cv::INTER_AREA;
+	}
+	Mat out;
+	cv::resize(img, out, size, 0, 0, method);
+	return out;
 }
 
 Mat image::GetEdgeMap(const Mat & img, double threshold)

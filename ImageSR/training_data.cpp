@@ -78,101 +78,9 @@ size_t TrainingData::GetLeftPatchesNumber(const BinaryTest & test) const
 
 void TrainingData::Resize(size_t n_patches)
 {
-	data_x = ERowMat::Zero(n_patches, len_vec);
-	data_y = ERowMat::Zero(n_patches, len_vec);
+	data_x = EMat::Zero(n_patches, len_vec);
+	data_y = EMat::Zero(n_patches, len_vec);
 }
-//
-//void TrainingData::Reserve(size_t n_patches)
-//{
-//    data_x.reserve(n_patches * len_vec);
-//    data_y.reserve(n_patches * len_vec);
-//}
-//
-//void TrainingData::PushBackPatch(const Mat & pat_low, const Mat & pat_high)
-//{
-//    assert(pat_low.size() == pat_high.size());
-//    assert(pat_low.type() == image::kFloatImageType && pat_high.type() == image::kFloatImageType);
-//    assert(pat_low.cols * pat_low.rows == len_vec);
-//    size_t n_curr = Num();
-//    if (data_x.capacity() == data_x.size())
-//    {
-//        Reserve(n_curr * 3 / 2);
-//    }
-//    Resize(n_curr + 1);
-//    image::VectorizePatch(pat_low, &X(n_curr));
-//    image::VectorizePatch(pat_high, &Y(n_curr));
-//}
-//
-//void TrainingData::PushBackImage(const Mat & in_low, const Mat & in_high)
-//{
-//    assert(!in_low.empty() && !in_high.empty());
-//
-//    if (in_low.empty() || in_high.empty()) return;
-//
-//    // resize the image to be able to extract overlapped patches
-//    Mat high = image::ResizeImage(in_high, in_high.size(), settings.patch_size, settings.overlap);
-//    Mat low = image::ResizeImage(in_low, high.size(), settings.patch_size, settings.overlap);
-//
-//    // Now extract the luminance value as the intensity value
-//    // for the following process
-//    // Now the type of high and low should be CV_8U of range [0, 255]
-//    high = image::SplitYCrcb(high).y;
-//    low = image::SplitYCrcb(low).y;
-//
-//    assert(high.type() == CV_8U);
-//    assert(low.type() == high.type());
-//    assert(low.size() == high.size());
-//
-//    // Now extract the edge map for edge patch identification 
-//    // We only need overlapped patches with edge pixel(s)
-//    // since bicubic(or any) interpolation is pretty good at non-edge area
-//    Mat edge = image::GetEdgeMap(high, settings.canny_edge_threshold);
-//
-//    // Now convert the image to float map of range [0, 1], which is 
-//    // mapped from the original CV_8U map
-//
-//    // Range [0, 1] is needed for EVERY processes involving Vectorization
-//    // If you use [0, 255], the following super complicated math things 
-//    // will produce a HUGE result value and the error caused by float(or double) is too high
-//    low = image::MatUchar2Float(low);
-//    high = image::MatUchar2Float(high);
-//
-//    // Now extract patches and push them to training data
-//    auto pairs = image::GetPatchesMulti(vector<Mat>({ low, high }), edge, settings.patch_size, settings.overlap);
-//    auto& low_pats = pairs[0];
-//    auto& high_pats = pairs[1];
-//    size_t n_pats = low_pats.size();
-//
-//    for (size_t i = 0; i < n_pats; ++i)
-//    {
-//        PushBackPatch(low_pats[i], high_pats[i]);
-//    }
-//}
-//
-//void TrainingData::Append(const TrainingData & data)
-//{
-//    assert(data.len_vec == len_vec);
-//    assert(data.data_x.size() == data.data_y.size());
-//    assert(data.data_x.size() % len_vec == 0);
-//    assert(data.settings == settings);
-//
-//    data_x.insert(data_x.end(), data.data_x.begin(), data.data_x.end());
-//    data_y.insert(data_y.end(), data.data_y.begin(), data.data_y.end());
-//}
-//
-//void TrainingData::PushBackImages(const ImageReader& low_imgs_reader, const ImageReader& high_imgs_reader, int n_threads)
-//{
-//    assert(low_imgs_reader.Size() == high_imgs_reader.Size());
-//    if (low_imgs_reader.Empty()) return;
-//    if (n_threads < 1) n_threads = 1;
-//
-//    size_t n_imgs = low_imgs_reader.Size();
-//
-//    for (int i = 0; i < n_imgs; ++i)
-//    {
-//        PushBackImage(low_imgs_reader.Get(i), high_imgs_reader.Get(i));
-//    }
-//}
 
 void TrainingData::SetImages(const vector<Mat>& input_lows, const vector<Mat>& input_highs)
 {
@@ -189,18 +97,16 @@ void TrainingData::SetImages(const vector<Mat>& input_lows, const vector<Mat>& i
 		Mat low = input_lows[i];
 		Mat high = input_highs[i];
 
+		high = image::ResizeImageToFitPatchIfNeeded(high, high.size(), settings.patch_size, settings.overlap);
+		low = image::ResizeImageToFitPatchIfNeeded(low, high.size(), settings.patch_size, settings.overlap);
+
 		low = image::SplitYCrcb(low).y;
 		high = image::SplitYCrcb(high).y;
 
-		Mat edge = image::GetEdgeMap(high, settings.canny_edge_threshold);
+		Mat edge = image::GetEdgeMap(low, settings.canny_edge_threshold);
 
 		low = image::MatUchar2Float(low);
 		high = image::MatUchar2Float(high);
-
-		if (low.size != high.size)
-		{
-			cv::resize(low, low, high.size(), 0, 0, cv::INTER_CUBIC);
-		}
 
 		auto patches = image::GetPatchesMulti(
 			vector<Mat>({ low, high }), edge, settings.patch_size, settings.overlap);
@@ -235,22 +141,12 @@ void TrainingData::SetImages(const vector<Mat>& input_lows, const vector<Mat>& i
 			image::VectorizePatch(patch_high, &Y(j + start_index));
 		}
 	}
-}
 
-//void TrainingData::ShrinkToFit()
-//{
-//    data_x.shrink_to_fit();
-//    data_y.shrink_to_fit();
-//}
+	EMat img = EMat::Zero(4, 5);
+}
 
 void TrainingData::Clear()
 {
 	data_x = ERowMat::Zero(0, 0);
 	data_y = ERowMat::Zero(0, 0);
 }
-
-//void TrainingData::ClearAndRelease()
-//{
-//    vector<Real>().swap(data_x);
-//    vector<Real>().swap(data_y);
-//}

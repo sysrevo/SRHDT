@@ -1,112 +1,81 @@
 ﻿#pragma once
 #include "../Utils/common.h"
 
+#define MAKE_CREATE_FUNC(class_type) \
+	static Ptr<class_type> Create(const vector<HandleFunc> & funcs = vector<HandleFunc>());\
+	static Ptr<class_type> Create(HandleFunc func);
+
+#define MAKE_CONSTRUCTOR(class_type)\
+	class_type(const HandleFunc & func);\
+	class_type(const vector<HandleFunc> & funcs = vector<HandleFunc>());
+
 namespace imgsr
 {
-    class ImageReader
-    {
-    public:
-        typedef std::function<void(Mat*)> HandleFunc;
+class ImageReader
+{
+public:
+    typedef std::function<void(Mat*)> HandleFunc;
 
-        ImageReader(const vector<HandleFunc> & handlers = vector<HandleFunc>());
+    ImageReader(const vector<HandleFunc> & handlers = vector<HandleFunc>());
+	ImageReader(const HandleFunc & func);
 
-        inline ImageReader(const HandleFunc & func)
-            : ImageReader(vector<HandleFunc>({ func })) {}
+    virtual bool Empty() const = 0;
+    virtual size_t Size() const = 0;
 
-        virtual bool Empty() const = 0;
-        virtual size_t Size() const = 0;
+    Mat Get(int ind) const;
 
-        Mat Get(int ind) const;
-    protected:
-        virtual Mat Read(int ind) const = 0;
+	inline Mat operator[](int ind) const
+	{ return Get(ind); }
 
-        vector<HandleFunc> handlers;
-    };
+	vector<HandleFunc> handlers;
+protected:
+    virtual Mat Read(int ind) const = 0;
+};
 
-    class MemoryImageReader : public ImageReader
-    {
-    public:
-        inline static Ptr<MemoryImageReader> Create(const vector<HandleFunc> & funcs = vector<HandleFunc>())
-        {
-            return make_shared<MemoryImageReader>(funcs);
-        }
 
-        inline static Ptr<MemoryImageReader> Create(HandleFunc func)
-        {
-            return make_shared<MemoryImageReader>(func);
-        }
+class MemIR : public ImageReader
+{
+public:
+	MAKE_CREATE_FUNC(MemIR);
+	MAKE_CONSTRUCTOR(MemIR);
 
-        inline MemoryImageReader(const HandleFunc & func)
-            :ImageReader(func) {}
+    virtual bool Empty() const override;
+    virtual size_t Size()  const override;
 
-        inline MemoryImageReader(const vector<HandleFunc> & funcs = vector<HandleFunc>())
-            :ImageReader(funcs) {}
+	vector<Mat> images;
+protected:
+    virtual Mat Read(int ind) const override;
+};
 
-        void Set(const vector<string> & paths);
-        void Set(const vector<Mat> & imgs);
-        virtual bool Empty() const override;
-        virtual size_t Size()  const override;
-    protected:
-        virtual Mat Read(int ind) const override;
-        vector<Mat> buf;
-    };
+class FileIR : public ImageReader
+{
+public:
+	MAKE_CREATE_FUNC(FileIR);
+	MAKE_CONSTRUCTOR(FileIR);
 
-    class FileImageReader : public ImageReader
-    {
-    public:
-        inline static Ptr<FileImageReader> Create(const vector<HandleFunc> & funcs = vector<HandleFunc>())
-        {
-            return make_shared<FileImageReader>(funcs);
-        }
+    virtual bool Empty() const override;
+    virtual size_t Size()  const override;
 
-        inline static Ptr<FileImageReader> Create(HandleFunc func)
-        {
-            return make_shared<FileImageReader>(func);
-        }
+	vector<string> paths;
+protected:
+    virtual Mat Read(int ind) const override;
+};
 
-        inline FileImageReader(const vector<HandleFunc> & funcs = vector<HandleFunc>())
-            :ImageReader(funcs) {}
+class WrappedIR : public ImageReader
+{
+public:
+	MAKE_CREATE_FUNC(WrappedIR);
+	MAKE_CONSTRUCTOR(WrappedIR);
+		
+	virtual bool Empty() const override;
+	virtual size_t Size() const override;
 
-        inline FileImageReader(const HandleFunc & func)
-            :ImageReader(func) {}
+	Ptr<ImageReader> source = nullptr;
 
-        void Set(const vector<string> & paths);
-        void Set(const string & paths);
-        virtual bool Empty() const override;
-        virtual size_t Size()  const override;
-    protected:
-        virtual Mat Read(int ind) const override;
-
-        vector<string> buf;
-    };
-
-    class HandlerImageReader : public ImageReader
-    {
-    public:
-        inline static Ptr<HandlerImageReader> Create(const vector<HandleFunc> & funcs = vector<HandleFunc>())
-        {
-            return make_shared<HandlerImageReader>(funcs);
-        }
-
-        inline static Ptr<HandlerImageReader> Create(HandleFunc func)
-        {
-            return make_shared<HandlerImageReader>(func);
-        }
-
-        HandlerImageReader(const vector<HandleFunc> & funcs = vector<HandleFunc>())
-            :ImageReader(funcs) {}
-
-        HandlerImageReader(const HandleFunc & func)
-            :ImageReader(func) {}
-
-        void SetInput(const vector<Ptr<ImageReader>> & readers);
-        void SetInput(const Ptr<ImageReader> & reader) { SetInput(vector<Ptr<ImageReader>>({ reader })); }
-
-        virtual bool Empty() const override;
-        virtual size_t Size()  const override;
-
-        vector<Ptr<ImageReader>> readers;
-    protected:
-        virtual Mat Read(int ind) const override;
-    };
+protected:
+	virtual Mat Read(int ind) const override;
+};
 }
+
+#undef MAKE_CREATE_FUNC
+#undef MAKE_CONSTRUCTOR

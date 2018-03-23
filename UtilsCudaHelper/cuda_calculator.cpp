@@ -125,8 +125,8 @@ void CudaCalculator::Mul(const CudaMat & a, const CudaMat & b, CudaMat* c_ptr)
 	CublasHandle handle;
 
 	// c = alpha * op(a) * op(b) + beta * c
-	double alpha = 1;
-	double beta = 0;
+	Real alpha = 1;
+	Real beta = 0;
 
 	cublasDgemm(handle.handle, 
 		CUBLAS_OP_N, CUBLAS_OP_N, // operation of matrix a and matrix b
@@ -147,7 +147,7 @@ EMat CudaCalculator::Mul(const EMat & a, const EMat & b)
 	return cuda_c.GetMat();
 }
 
-void CudaCalculator::Sub(const CudaMat & a, const CudaMat & b, CudaMat * c_ptr)
+void CudaCalculator::Add(const CudaMat & a, const CudaMat & b, CudaMat * c_ptr, Real alpha, Real beta)
 {
 	if (c_ptr == nullptr) return;
 	assert(a.cols == b.cols);
@@ -163,4 +163,13 @@ void CudaCalculator::Sub(const CudaMat & a, const CudaMat & b, CudaMat * c_ptr)
 	assert(a.cols == c.cols);
 
 	CublasHandle handle;
+
+	cublasDgeam(handle.handle, 
+		CUBLAS_OP_N, CUBLAS_OP_N,  // operation of matrix a and matrix b
+		a.rows, a.cols, // size of matrix
+		&alpha, 
+		a.ptr, a.rows, // matrix a and leading dimension 
+		&beta, 
+		b.ptr, b.rows, // matrix b and leading dimension 
+		c.ptr, c.rows); // matrix c and leading dimension
 }

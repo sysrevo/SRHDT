@@ -18,14 +18,11 @@
     <Filter Include="头文件\system">
       <UniqueIdentifier>{9374fa8f-0d64-43ad-8da2-db0e16244367}</UniqueIdentifier>
     </Filter>
+    <Filter Include="头文件\stdafx">
+      <UniqueIdentifier>{a6cc6dd4-12cb-46d3-a717-5b01b3ab38fd}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="stdafx.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
-    <ClInclude Include="targetver.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="training_data.h">
       <Filter>头文件\system</Filter>
     </ClInclude>
@@ -47,11 +44,14 @@
     <ClInclude Include="settings.h">
       <Filter>头文件\system</Filter>
     </ClInclude>
-    <ClInclude Include="imgsr_system.h">
-      <Filter>头文件\system</Filter>
-    </ClInclude>
     <ClInclude Include="utils_rapidjson.h">
       <Filter>头文件\system</Filter>
+    </ClInclude>
+    <ClInclude Include="targetver.h">
+      <Filter>头文件\stdafx</Filter>
+    </ClInclude>
+    <ClInclude Include="stdafx.h">
+      <Filter>头文件\stdafx</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

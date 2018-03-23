@@ -1,10 +1,9 @@
 ﻿#pragma once
 #include "node.h"
-#include "imgsr_system.h"
 
 namespace imgsr
 {
-    class DTree : public LearningBasedImgSR
+    class DTree
     {
     public:
         struct LearnStatus
@@ -29,8 +28,7 @@ namespace imgsr
         /// </summary>
         /// <param name="low_imgs"></param>
         /// <param name="high_imgs"></param>
-        virtual void Learn(
-            const ImageReader& low_reader, const ImageReader& high_reader) override;
+        void Learn(const ImageReader& low_reader, const ImageReader& high_reader);
 
         void Learn(const Ptr<TrainingData> & total_samples);
 
@@ -40,7 +38,7 @@ namespace imgsr
         /// <param name="in_low">The input image. Please check if this image is not empty and only with type CV_8U first.</param>
         /// <param name="size">The width of high-res output image.</param>
         /// <returns>The high-res image predicted by this decision tree</returns>
-        virtual Mat PredictImage(const Mat & in_low, cv::Size size) const override;
+        Mat PredictImage(const Mat & in_low, cv::Size size) const;
 
         /// <summary>
         /// Predict an input patch. Please modified this->settings to match requirements before calling this function.
@@ -70,7 +68,7 @@ namespace imgsr
         LearnStatus learn_stat;
     };
 
-    class HDTrees : public LearningBasedImgSR
+    class HDTrees
     {
     public:
         struct LearnStatus
@@ -81,10 +79,9 @@ namespace imgsr
 
         HDTrees(const Settings & settings_);
 
-        virtual void Learn(
-            const ImageReader& low_reader, const ImageReader& high_reader) override;
+        void Learn(const ImageReader& low_reader, const ImageReader& high_reader);
 
-        virtual Mat PredictImage(const Mat & in_low, cv::Size size) const override;
+        Mat PredictImage(const Mat & in_low, cv::Size size) const;
 
         inline const LearnStatus& GetLearnStatus() const
         {

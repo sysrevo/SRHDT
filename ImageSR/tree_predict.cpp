@@ -8,12 +8,12 @@ using utils::math::VectorRotator;
 
 VectorRotator rotator(1);
 
-Mat DTree::PredictImage(const Mat & in_img, cv::Size size) const
+Mat DTree::PredictImage(const Mat & in_img, Size size) const
 {
     rotator = VectorRotator(settings.patch_size);
     using namespace cv;
 
-    Mat img = image::ResizeImage(in_img, size, settings.patch_size, settings.overlap);
+    Mat img = image::ResizeImageToFitPatchIfNeeded(in_img, size, settings.patch_size, settings.overlap);
 
     image::YCrCbImage channels = image::SplitYCrcb(img);
     Mat edge = image::GetEdgeMap(channels.y, settings.canny_edge_threshold);
@@ -101,7 +101,7 @@ Mat DTree::PredictPatch(const Mat & pat_in) const
             const int n_rotates = 3;
             for (int i = 0; i < n_rotates; ++i)
             {
-				ERowVec vec = rotator.RotateVector(vec, i + 1);
+				ERowVec vec = rotator.RotateVector(x, i + 1);
                 auto leaf = root->ReachLeafNode(vec);
                 EMat tmp_model = rotator.RotateModel(leaf->c, i + 1);
                 model += tmp_model;
@@ -113,7 +113,7 @@ Mat DTree::PredictPatch(const Mat & pat_in) const
     return image::DevectorizePatch(res, settings.patch_size);
 }
 
-Mat HDTrees::PredictImage(const Mat & img, cv::Size size) const
+Mat HDTrees::PredictImage(const Mat & img, Size size) const
 {
     Mat out_img = img;
     for (int layer = 0; layer < trees.size(); ++layer)

@@ -13,6 +13,11 @@ ImageReader::ImageReader(const vector<HandleFunc> & handlers_)
     });
 }
 
+ImageReader::ImageReader(const HandleFunc & func)
+	: ImageReader(vector<HandleFunc>({ func }))
+{
+}
+
 Mat ImageReader::Get(int ind) const
 {
     Mat res = Read(ind);
@@ -21,102 +26,86 @@ Mat ImageReader::Get(int ind) const
     return res;
 }
 
-void MemoryImageReader::Set(const vector<string> & paths)
+#define MAKE_CREATE_FUNC(class_type) \
+	Ptr<class_type> class_type::Create(const vector<HandleFunc> & funcs)\
+	{\
+		return make_shared<class_type>(funcs);\
+	}\
+	\
+	Ptr<class_type> class_type::Create(HandleFunc func)\
+	{\
+		return make_shared<class_type>(func);\
+	}
+
+#define MAKE_CONSTRUCTOR(class_type)\
+	class_type::class_type(const HandleFunc & func)\
+		:ImageReader(func) {}\
+	\
+	class_type::class_type(const vector<HandleFunc> & funcs)\
+		: ImageReader(funcs) {}
+
+MAKE_CREATE_FUNC(MemIR);
+MAKE_CONSTRUCTOR(MemIR);
+
+bool MemIR::Empty() const
 {
-    buf.reserve(paths.size());
-    buf.clear();
-    for (const string & p : paths)
-    {
-        buf.push_back(cv::imread(p));
-    }
+    return images.empty();
 }
 
-void MemoryImageReader::Set(const vector<Mat> & imgs)
+size_t MemIR::Size() const
 {
-    buf = imgs;
+    return images.size();
 }
 
-bool MemoryImageReader::Empty() const
-{
-    return buf.empty();
-}
-
-size_t MemoryImageReader::Size() const
-{
-    return buf.size();
-}
-
-Mat MemoryImageReader::Read(int ind) const
+Mat MemIR::Read(int ind) const
 {
     assert(!Empty());
-    assert(ind >= 0 && ind < buf.size());
-    return buf[ind];
+    assert(ind >= 0 && ind < images.size());
+	return images[ind];
 }
 
-void FileImageReader::Set(const vector<string> & paths)
+MAKE_CREATE_FUNC(FileIR);
+MAKE_CONSTRUCTOR(FileIR);
+
+bool FileIR::Empty() const
 {
-    buf = paths;
+    return paths.empty();
 }
 
-void FileImageReader::Set(const string & path)
+size_t FileIR::Size() const
 {
-    Set(vector<string>({ path }));
+    return paths.size();
 }
 
-bool FileImageReader::Empty() const
-{
-    return buf.empty();
-}
-
-size_t FileImageReader::Size() const
-{
-    return buf.size();
-}
-
-Mat FileImageReader::Read(int ind) const
+Mat FileIR::Read(int ind) const
 {
     assert(!Empty());
-    assert(ind >= 0 && ind < buf.size());
-    Mat res = cv::imread(buf[ind]);
+    assert(ind >= 0 && ind < paths.size());
+    Mat res = cv::imread(paths[ind]);
     return res;
 }
 
-bool HandlerImageReader::Empty() const
+MAKE_CREATE_FUNC(WrappedIR);
+MAKE_CONSTRUCTOR(WrappedIR);
+
+bool WrappedIR::Empty() const
 {
-    for (const auto & r : readers)
-        if (!r->Empty()) return false;
-    return true;
+	if (source) return source->Empty();
+	return false;
 }
 
-size_t HandlerImageReader::Size() const
+size_t WrappedIR::Size() const
 {
-    size_t num = 0;
-    for (const auto & r : readers)
-        num += r->Size();
-    return num;
+	if (source) return source->Size();
+	return -1;
 }
 
-Mat HandlerImageReader::Read(int ind) const
+Mat WrappedIR::Read(int ind) const
 {
-    Mat img;
-    for (const auto & r : readers)
-    {
-        int size = (int)r->Size();
-        if (ind < size)
-        {
-            img = r->Get(ind);
-            break;
-        }
-        ind -= size;
-    }
-    return img;
-}
-
-void HandlerImageReader::SetInput(
-    const vector<Ptr<ImageReader>> & readers_)
-{
-    readers = utils::math::Select(readers_, [](const Ptr<ImageReader> & reader)
-    {
-        return reader != nullptr;
-    });
+	if (source)
+	{
+		Mat img = source->Get(ind);
+		return img;
+	}
+	return Mat();
 }

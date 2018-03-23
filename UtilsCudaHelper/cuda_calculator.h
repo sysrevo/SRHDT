@@ -34,7 +34,7 @@ namespace utils
 		static void Mul(const CudaMat& a, const CudaMat& b, CudaMat* c);
 		static EMat Mul(const EMat& a, const EMat& b);
 
-		static void Sub(const CudaMat& a, const CudaMat& b, CudaMat* c);
+		static void Add(const CudaMat& a, const CudaMat& b, CudaMat* c, Real alpha = 1, Real beta = 1);
 	};
 } // utils
 } // imgsr

@@ -3,6 +3,7 @@
 #include "../Utils/utils.h"
 #include "training_data.h"
 #include "../UtilsCudaHelper/cuda_calculator.h"
+#include <chrono>
 
 using namespace imgsr;
 using namespace imgsr::utils;
@@ -80,22 +81,79 @@ inline Real GetFittingError(const EMat& c, const EMat& x, const EMat& y)
 
 struct CalculationResult
 {
-	EMat c;
+	EMat model;
 	Real fitting_error;
 	size_t num_samples;
 };
 
-template<class InputType>
-CalculationResult DoComplexCalculate(const InputType & x, const InputType & y, Real lamda)
+template<class Input1, class Input2>
+CalculationResult DoComplexCalculation(const Input1 & x, const Input2 & y, Real lamda)
 {
 	assert(x.rows() == y.rows());
 
 	CalculationResult res;
 	res.num_samples = x.rows();
-	res.c = GetRegressionModel(x, y, lamda);
-	EMat yr = x * res.c;
-	res.fitting_error = GetFittingError(res.c, x, y);
+	{
+		auto xt = x.transpose();
+		auto tmp_lamda = lamda * EMat::Identity(x.cols(), x.cols());
+		res.model = ((xt * x + tmp_lamda).inverse()) * xt * y;
+	}
+	{
+		EMat yr = x * res.model;
+		EMat delta = y - yr;
+		res.fitting_error = delta.squaredNorm() / y.rows();
+	}
 	return res;
+}
+
+template<class Input1, class Input2>
+CalculationResult DoComplexCalculationGpu(const Input1 & x, const Input2 & y, Real lamda)
+{
+	assert(x.rows() == y.rows());
+
+	CalculationResult res;
+	res.num_samples = x.rows();
+
+	CudaMat cuda_x(x);
+	CudaMat cuda_y(y);
+	{
+		CudaMat cuda_xt(x.transpose());
+		EMat part1;
+		{ // xt * x
+			CudaMat res;
+			CudaCalculator::Mul(cuda_xt, cuda_x, &res);
+			part1 = res.GetMat();
+		}
+		EMat part2;
+		{ // xt * y
+			CudaMat res;
+			CudaCalculator::Mul(cuda_xt, cuda_y, &res);
+			part2 = res.GetMat();
+		}
+		EMat tmp_lamda = lamda * ERowMat::Identity(x.cols(), x.cols());
+		res.model = (part1 + tmp_lamda).inverse() * part2;
+	}
+	{
+		CudaMat cuda_model(res.model);
+		CudaMat cuda_yr;
+		CudaCalculator::Mul(cuda_x, cuda_model, &cuda_yr);
+
+		CudaMat cuda_delta;
+		CudaCalculator::Add(cuda_y, cuda_yr, &cuda_delta, 1, -1);
+
+		EMat delta = cuda_delta.GetMat();
+		res.fitting_error = delta.squaredNorm() / y.rows();
+	}
+	return res;
+}
+
+template<class Input1, class Input2>
+CalculationResult CalculateModelAndFittingError(const Input1 & x, const Input2 & y, Real lamda)
+{
+	return DoComplexCalculation(x, y, lamda);
+	//CalculationResult res = x.rows() > 100000 ? 
+	//	DoComplexCalculationGpu(x, y, lamda) : DoComplexCalculation(x, y, lamda);
+	//return res;
 }
 
 struct BinaryTestResult
@@ -191,8 +249,8 @@ BinaryTestResult GenerateTestWithMaxErrorReduction(
 			const auto& right_y = buf_right->MatY();
 
 			//MyLogger::debug << "start doing complex calculation..." << endl;
-			CalculationResult res_left = DoComplexCalculate(left_x, left_y, samples.settings.lamda);
-			CalculationResult res_right = DoComplexCalculate(right_x, right_y, samples.settings.lamda);
+			CalculationResult res_left = CalculateModelAndFittingError(left_x, left_y, samples.settings.lamda);
+			CalculationResult res_right = CalculateModelAndFittingError(right_x, right_y, samples.settings.lamda);
 
 			// get error reduction and compare to find the max error reduction
 			Real error_reduction = GetErrorReduction(err,
@@ -243,7 +301,8 @@ void DTree::Learn(
 void DTree::Learn(
     const Ptr<TrainingData> & total_samples)
 {
-    using std::endl;
+	auto now = std::chrono::system_clock::now();
+	srand(std::chrono::system_clock::to_time_t(now));
 
     if (total_samples->Num() == 0) return;
     // recording status
@@ -266,14 +325,14 @@ void DTree::Learn(
 
         // calculate regression model for this node
 
-        CalculationResult node_calc_res = DoComplexCalculate(
+        CalculationResult node_calc_res = CalculateModelAndFittingError(
             node->GetSamples()->MatX(),
             node->GetSamples()->MatY(),
             settings.lamda);
 
         if (n_samples < 2 * settings.min_n_patches)
         {
-            node->BecomeLeafNode(node_calc_res.c);
+            node->BecomeLeafNode(node_calc_res.model);
             learn_stat.n_leaf += 1;
         }
         else
@@ -291,7 +350,7 @@ void DTree::Learn(
             else
             {
                 // this node is a leaf node
-                node->BecomeLeafNode(node_calc_res.c);
+                node->BecomeLeafNode(node_calc_res.model);
 
                 learn_stat.n_leaf += 1;
             }
@@ -304,6 +363,8 @@ void DTree::Learn(
 void HDTrees::Learn(
     const ImageReader& low_reader, const ImageReader& high_reader)
 {
+	assert(low_reader);
+	assert(high_reader);
     assert(low_reader.Size() == high_reader.Size());
     assert(!low_reader.Empty());
 
@@ -335,22 +396,16 @@ void HDTrees::Learn(
             Mat low = low_reader.Get(img_ind);
             Mat high = high_reader.Get(img_ind);
 
-            high = image::ResizeImage(high, high.size(), settings.patch_size, settings.overlap);
-            low = image::ResizeImage(low, high.size(), settings.patch_size, settings.overlap);
-
-            for (const auto & tree : trees)
-            {
-                low = tree.PredictImage(low, low.size());
-            }
+			low = PredictImage(low, high.size());
 
             buf_low.push_back(low);
             buf_high.push_back(high);
         }
 
-        Ptr<MemoryImageReader> low_imgs = MemoryImageReader::Create();
-        low_imgs->Set(buf_low);
-        Ptr<MemoryImageReader> high_imgs = MemoryImageReader::Create();
-        high_imgs->Set(buf_high);
+        Ptr<MemIR> low_imgs = MemIR::Create();
+        low_imgs->images = buf_low;
+        Ptr<MemIR> high_imgs = MemIR::Create();
+        high_imgs->images = buf_high;
 
         trees.push_back(DTree(settings));
 

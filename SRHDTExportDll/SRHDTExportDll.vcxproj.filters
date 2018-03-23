@@ -21,7 +21,7 @@
     <ClInclude Include="targetver.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="dll_exports.h">
+    <ClInclude Include="srhdt.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
@@ -32,7 +32,7 @@
     <ClCompile Include="dllmain.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="dll_exports.cpp">
+    <ClCompile Include="cinterface.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
