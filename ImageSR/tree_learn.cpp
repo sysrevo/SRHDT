@@ -2,8 +2,11 @@
 #include "tree.h"
 #include "../Utils/utils.h"
 #include "training_data.h"
-#include "../UtilsCudaHelper/cuda_calculator.h"
 #include <chrono>
+
+#ifdef USE_CUDA
+#include "../UtilsCudaHelper/cuda_calculator.h"
+#endif
 
 using namespace imgsr;
 using namespace imgsr::utils;
@@ -66,6 +69,7 @@ inline Real GetErrorReduction(Real ej, size_t nl, Real el, size_t nr, Real er)
 inline Real GetFittingError(const EMat& c, const EMat& x, const EMat& y)
 {
 	EMat yr;
+#ifdef USE_CUDA
 	if (x.rows() * x.cols() <= 360000)
 	{
 		yr = x * c;
@@ -74,6 +78,9 @@ inline Real GetFittingError(const EMat& c, const EMat& x, const EMat& y)
 	{
 		yr = CudaCalculator::Mul(x, c);
 	}
+#else
+    yr = x * c;
+#endif
 	EMat delta = y - yr;
 	auto tmp = delta.squaredNorm();
 	return delta.squaredNorm() / y.rows();
@@ -106,6 +113,7 @@ CalculationResult DoComplexCalculation(const Input1 & x, const Input2 & y, Real 
 	return res;
 }
 
+#ifdef USE_CUDA
 template<class Input1, class Input2>
 CalculationResult DoComplexCalculationGpu(const Input1 & x, const Input2 & y, Real lamda)
 {
@@ -146,14 +154,12 @@ CalculationResult DoComplexCalculationGpu(const Input1 & x, const Input2 & y, Re
 	}
 	return res;
 }
+#endif
 
 template<class Input1, class Input2>
 CalculationResult CalculateModelAndFittingError(const Input1 & x, const Input2 & y, Real lamda)
 {
 	return DoComplexCalculation(x, y, lamda);
-	//CalculationResult res = x.rows() > 100000 ? 
-	//	DoComplexCalculationGpu(x, y, lamda) : DoComplexCalculation(x, y, lamda);
-	//return res;
 }
 
 struct BinaryTestResult

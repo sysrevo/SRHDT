@@ -5,7 +5,15 @@
 using namespace imgsr;
 using namespace utils;
 
-void TrainingData::Split(const BinaryTest & test, 
+Ptr<TrainingData> TrainingData::Create(const Settings & sets)
+{
+    return make_shared<TrainingData>(sets);
+}
+
+TrainingData::TrainingData(const Settings & sets) :
+    settings(sets), len_vec(sets.patch_size * sets.patch_size) {}
+
+void TrainingData::Split(const BinaryTest & test,
     TrainingData* out_left, TrainingData* out_right) const
 {
     // Number of things

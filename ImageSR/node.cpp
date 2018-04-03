@@ -3,10 +3,15 @@
 
 using namespace imgsr;
 
+DTNode::DTNode(const Ptr<TrainingData>& samples_ptr)
+    : samples(samples_ptr)
+{
+}
+
 void DTNode::BecomeLeafNode(const EMat & c)
 {
     this->is_leaf = true;
-    this->c = c;
+    this->model = c;
 }
 
 void DTNode::BecomeNonLeafNode(const Ptr<TrainingData> & left_samples, const Ptr<TrainingData> & right_samples, const BinaryTest& test)
@@ -15,23 +20,6 @@ void DTNode::BecomeNonLeafNode(const Ptr<TrainingData> & left_samples, const Ptr
     this->left = UPtr<DTNode>(new DTNode(left_samples));
     this->right = UPtr<DTNode>(new DTNode(right_samples));
     this->test = test;
-}
-
-void DTNode::PrintBrief(std::ostream & os, int stack) const
-{
-    using namespace std;
-    os << "|";
-    for (int i = 0; i < stack; ++i) os << "-";
-    if (is_leaf)
-    {
-        os << "[Leaf] c" << endl;
-    }
-    else
-    {
-        os << "[Nonleaf] test: p1: " << test.p1 << "; p2: " << test.p2 << "; r: " << test.r << endl;
-        left->PrintBrief(os, stack + 1);
-        right->PrintBrief(os, stack + 1);
-    }
 }
 
 const DTNode * DTNode::ReachLeafNode(const ERowVec & x) const

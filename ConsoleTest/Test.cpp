@@ -48,7 +48,7 @@ inline bool IsFileImage(const string& file)
 }
 
 TestCase GetHighAndCreateLow(const string & dir_path, int max_num = 0,
-    ImageReader::HandleFunc func_high = nullptr, int times = 2)
+    ImageReader::Handler func_high = nullptr, int times = 2)
 {
 
     auto high_imgs = FileIR::Create(func_high);
@@ -72,7 +72,7 @@ TestCase GetHighAndCreateLow(const string & dir_path, int max_num = 0,
 }
 
 TestCase GetHighAndLow(const string& lr_dir, const string& hr_dir, 
-	ImageReader::HandleFunc low_func = nullptr, ImageReader::HandleFunc high_func = nullptr)
+	ImageReader::Handler low_func = nullptr, ImageReader::Handler high_func = nullptr)
 {
 	auto low_imgs = FileIR::Create(low_func);
 	auto high_imgs = FileIR::Create(high_func);

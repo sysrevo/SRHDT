@@ -150,7 +150,7 @@ void json::DeserializeNode(const Value & val, int patch_size, DTNode* node)
     node->is_leaf = val[key_is_leaf].GetBool();
     if (node->is_leaf)
     {
-        node->c = DeserializeModel(val[key_c], patch_size);
+        node->model = DeserializeModel(val[key_c], patch_size);
     }
     else
     {
@@ -170,7 +170,7 @@ void json::SerializeNode(DTNode* node, AllocatorType & allocator, Value* node_ob
     {
         // store the regression model for leaf node
         Value model_val;
-        SerializeModel(node->c, allocator, &model_val);
+        SerializeModel(node->model, allocator, &model_val);
         node_obj->AddMember(key_c, model_val, allocator);
     }
     else

@@ -26,8 +26,8 @@ namespace imgsr
         /// the length of a vectorized patch (patchSize * patchSize) and that length must equal what's in the tree's settings,
         /// otherwise shit happens (part of the regression model will not be invertable, or the size of multiplied matrics is incorrect)
         /// </summary>
-        /// <param name="low_imgs"></param>
-        /// <param name="high_imgs"></param>
+        /// <param name="low_reader">Image reader of low resolution images</param>
+        /// <param name="high_reader">Image reader of high resolution images.</param>
         void Learn(const ImageReader& low_reader, const ImageReader& high_reader);
 
         void Learn(const Ptr<TrainingData> & total_samples);
@@ -35,9 +35,9 @@ namespace imgsr
         /// <summary>
         /// Predict an image. Expected width and height must be at least the width and height of image 'low'.
         /// </summary>
-        /// <param name="in_low">The input image. Please check if this image is not empty and only with type CV_8U first.</param>
+        /// <param name="in_low">The input low resolution image. Please check if this image is not empty and only with type CV_8U first.</param>
         /// <param name="size">The width of high-res output image.</param>
-        /// <returns>The high-res image predicted by this decision tree</returns>
+        /// <returns>The high resolution image predicted by this decision tree</returns>
         Mat PredictImage(const Mat & in_low, cv::Size size) const;
 
         /// <summary>

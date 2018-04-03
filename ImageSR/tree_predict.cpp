@@ -92,7 +92,7 @@ Mat DTree::PredictPatch(const Mat & pat_in) const
         Size size = Size(settings.patch_size, settings.patch_size);
         {
             auto leaf = root->ReachLeafNode(x);
-            model += leaf->c;
+            model += leaf->model;
             n_models += 1;
         }
 
@@ -103,7 +103,7 @@ Mat DTree::PredictPatch(const Mat & pat_in) const
             {
 				ERowVec vec = rotator.RotateVector(x, i + 1);
                 auto leaf = root->ReachLeafNode(vec);
-                EMat tmp_model = rotator.RotateModel(leaf->c, i + 1);
+                EMat tmp_model = rotator.RotateModel(leaf->model, i + 1);
                 model += tmp_model;
             }
             n_models += n_rotates;

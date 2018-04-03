@@ -5,16 +5,16 @@
 using namespace imgsr;
 using namespace utils;
 
-ImageReader::ImageReader(const vector<HandleFunc> & handlers_)
+ImageReader::ImageReader(const vector<Handler> & handlers_)
 {
-    handlers = math::Select(handlers_, [](HandleFunc func) 
+    handlers = math::Select(handlers_, [](Handler func) 
     {
         return func != nullptr;
     });
 }
 
-ImageReader::ImageReader(const HandleFunc & func)
-	: ImageReader(vector<HandleFunc>({ func }))
+ImageReader::ImageReader(const Handler & func)
+	: ImageReader(vector<Handler>({ func }))
 {
 }
 
@@ -27,25 +27,25 @@ Mat ImageReader::Get(int ind) const
 }
 
 #define MAKE_CREATE_FUNC(class_type) \
-	Ptr<class_type> class_type::Create(const vector<HandleFunc> & funcs)\
+	Ptr<class_type> class_type::Create(const vector<Handler> & funcs)\
 	{\
 		return make_shared<class_type>(funcs);\
 	}\
 	\
-	Ptr<class_type> class_type::Create(HandleFunc func)\
+	Ptr<class_type> class_type::Create(Handler func)\
 	{\
 		return make_shared<class_type>(func);\
 	}
 
 #define MAKE_CONSTRUCTOR(class_type)\
-	class_type::class_type(const HandleFunc & func)\
+	class_type::class_type(const Handler & func)\
 		:ImageReader(func) {}\
 	\
-	class_type::class_type(const vector<HandleFunc> & funcs)\
+	class_type::class_type(const vector<Handler> & funcs)\
 		: ImageReader(funcs) {}
 
-MAKE_CREATE_FUNC(MemIR);
-MAKE_CONSTRUCTOR(MemIR);
+MAKE_CREATE_FUNC(MemIR)
+MAKE_CONSTRUCTOR(MemIR)
 
 bool MemIR::Empty() const
 {
@@ -64,8 +64,8 @@ Mat MemIR::Read(int ind) const
 	return images[ind];
 }
 
-MAKE_CREATE_FUNC(FileIR);
-MAKE_CONSTRUCTOR(FileIR);
+MAKE_CREATE_FUNC(FileIR)
+MAKE_CONSTRUCTOR(FileIR)
 
 bool FileIR::Empty() const
 {
@@ -85,8 +85,8 @@ Mat FileIR::Read(int ind) const
     return res;
 }
 
-MAKE_CREATE_FUNC(WrappedIR);
-MAKE_CONSTRUCTOR(WrappedIR);
+MAKE_CREATE_FUNC(WrappedIR)
+MAKE_CONSTRUCTOR(WrappedIR)
 
 bool WrappedIR::Empty() const
 {

@@ -5,7 +5,7 @@
 
 #pragma once
 
+#include "common.h"
 #include "targetver.h"
-#include "../Utils/common.h"
 
 // TODO: 在此处引用程序需要的其他头文件
