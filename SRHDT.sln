@@ -15,6 +15,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Utils", "Utils\Utils.vcxpro
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "UtilsCudaHelper", "UtilsCudaHelper\UtilsCudaHelper.vcxproj", "{C2ECEAE5-34E0-49C6-BE33-90A90A2E4686}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "QtGui", "QtGui\QtGui.vcxproj", "{921ECA0B-FFD8-33C6-9057-18E2845E10BC}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -71,6 +73,14 @@ Global
 		{C2ECEAE5-34E0-49C6-BE33-90A90A2E4686}.Release|x64.Build.0 = Release|x64
 		{C2ECEAE5-34E0-49C6-BE33-90A90A2E4686}.Release|x86.ActiveCfg = Release|Win32
 		{C2ECEAE5-34E0-49C6-BE33-90A90A2E4686}.Release|x86.Build.0 = Release|Win32
+		{921ECA0B-FFD8-33C6-9057-18E2845E10BC}.Debug|x64.ActiveCfg = Debug|x64
+		{921ECA0B-FFD8-33C6-9057-18E2845E10BC}.Debug|x64.Build.0 = Debug|x64
+		{921ECA0B-FFD8-33C6-9057-18E2845E10BC}.Debug|x64.Deploy.0 = Debug|x64
+		{921ECA0B-FFD8-33C6-9057-18E2845E10BC}.Debug|x86.ActiveCfg = Debug|x64
+		{921ECA0B-FFD8-33C6-9057-18E2845E10BC}.Release|x64.ActiveCfg = Release|x64
+		{921ECA0B-FFD8-33C6-9057-18E2845E10BC}.Release|x64.Build.0 = Release|x64
+		{921ECA0B-FFD8-33C6-9057-18E2845E10BC}.Release|x64.Deploy.0 = Release|x64
+		{921ECA0B-FFD8-33C6-9057-18E2845E10BC}.Release|x86.ActiveCfg = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

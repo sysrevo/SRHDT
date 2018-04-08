@@ -1,8 +1,9 @@
 ﻿#include "stdafx.h"
 #include "tree.h"
-#include "../Utils/utils.h"
-#include "training_data.h"
 #include <chrono>
+#include "training_data.h"
+#include "image_reader.h"
+#include "../Utils/utils.h"
 
 #ifdef USE_CUDA
 #include "../UtilsCudaHelper/cuda_calculator.h"
@@ -282,43 +283,22 @@ void DTree::CreateRoot()
     root = std::make_unique<DTNode>();
 }
 
-void DTree::Learn(
-    const ImageReader& low_reader, const ImageReader& high_reader)
+void DTree::Learn(Ptr<const ImgReader> lows, Ptr<const ImgReader> highs, LearnStatus* status)
 {
-    if (low_reader.Empty()) return;
+    auto now = std::chrono::system_clock::now();
+    srand(std::chrono::system_clock::to_time_t(now));
 
     Ptr<TrainingData> total_samples = TrainingData::Create(settings);
-
-	const size_t n_imgs = low_reader.Size();
-
-	vector<Mat> lows(low_reader.Size());
-	for (int i = 0; i < n_imgs; ++i)
-		lows[i] = low_reader.Get(i);
-
-	vector<Mat> highs(high_reader.Size());
-	for (int i = 0; i < n_imgs; ++i)
-		highs[i] = high_reader.Get(i);
-
     total_samples->SetImages(lows, highs);
 
-    Learn(total_samples);
-}
-
-void DTree::Learn(
-    const Ptr<TrainingData> & total_samples)
-{
-	auto now = std::chrono::system_clock::now();
-	srand(std::chrono::system_clock::to_time_t(now));
-
     if (total_samples->Num() == 0) return;
-    // recording status
 
     root = UPtr<DTNode>(new DTNode(total_samples));
     // iterate all unprocessed node, starting from the first
     queue<DTNode*> unprocessed;
     unprocessed.push(root.get());
 
-    learn_stat = LearnStatus();
+    if(status) *status = LearnStatus();
 
     while (!unprocessed.empty())
     {
@@ -327,7 +307,7 @@ void DTree::Learn(
 
         const size_t n_samples = node->GetSamples()->Num();
 
-        learn_stat.n_samples = n_samples;
+        if (status) status->n_samples = n_samples;
 
         // calculate regression model for this node
 
@@ -339,84 +319,82 @@ void DTree::Learn(
         if (n_samples < 2 * settings.min_n_patches)
         {
             node->BecomeLeafNode(node_calc_res.model);
-            learn_stat.n_leaf += 1;
+            if (status) status->n_leaf += 1;
         }
         else
         {
             BinaryTestResult bin_res =
-                GenerateTestWithMaxErrorReduction(node_calc_res.fitting_error, *node->GetSamples(), rand(), &learn_stat);
+                GenerateTestWithMaxErrorReduction(node_calc_res.fitting_error, *node->GetSamples(), rand(), status);
             if (bin_res.error_reduction > 0)
             {
-                node->BecomeNonLeafNode(bin_res.left, bin_res.right, bin_res.test);
+                node->BecomeNonLeafNode(
+                    std::move(bin_res.left),
+                    std::move(bin_res.right),
+                    bin_res.test);
                 unprocessed.push(node->GetLeft());
                 unprocessed.push(node->GetRight());
 
-                learn_stat.n_nonleaf += 1;
+                if (status) status->n_nonleaf += 1;
             }
             else
             {
                 // this node is a leaf node
                 node->BecomeLeafNode(node_calc_res.model);
 
-                learn_stat.n_leaf += 1;
+                if (status) status->n_leaf += 1;
             }
+            node->ClearSamples();
         }
-		node->GetSamples()->Clear();
-        node = nullptr;
     }
 }
 
-void HDTrees::Learn(
-    const ImageReader& low_reader, const ImageReader& high_reader)
+void HDTrees::Learn(Ptr<const ImgReader> low_reader, Ptr<const ImgReader> high_reader, LearnStatus* status)
 {
-	assert(low_reader);
-	assert(high_reader);
-    assert(low_reader.Size() == high_reader.Size());
-    assert(!low_reader.Empty());
+    assert(low_reader->Size() == high_reader->Size());
+    assert(!low_reader->Empty());
 
-    using std::endl;
-
+    // initialize trees 
     trees.clear();
     trees.reserve(settings.layers);
+    for (int layer = 0; layer < settings.layers; layer += 1)
+        trees.push_back(DTree(settings));
 
-    __int64 n_imgs = low_reader.Size();
-    __int64 n_per_layer = n_imgs / settings.layers;
+    size_t n_imgs = low_reader->Size();
+    size_t n_per_layer = n_imgs / settings.layers;
 
-    vector<Mat> buf_low;
-    vector<Mat> buf_high;
-    buf_low.reserve(n_per_layer * 2);
-    buf_high.reserve(n_per_layer * 2);
+    // buffer for low resolution images and high resolution images
+    Ptr<MemIR> low_imgs = MemIR::Create();
+    Ptr<MemIR> high_imgs = MemIR::Create();
+    low_imgs->images.reserve(n_per_layer * 2);
+    high_imgs->images.reserve(n_per_layer * 2);
 
     for (int layer = 0; layer < settings.layers; ++layer)
     {
-        stat_learn.layer = layer;
+        if (status) status->layer = layer;
 
-        int start = layer * n_per_layer;
-        int end = start + n_per_layer;
+        // calculate start and end location
+        size_t start = layer * n_per_layer;
+        size_t end = start + n_per_layer;
         if (layer == settings.layers - 1) end = n_imgs;
-        buf_low.clear();
-        buf_high.clear();
 
-        for (__int64 img_ind = start; img_ind < end; ++img_ind)
+        // clean up the buffer for later usage
+        low_imgs->images.clear();
+        high_imgs->images.clear();
+
+        for (size_t img_ind = start; img_ind < end; ++img_ind)
         {
-            Mat low = low_reader.Get(img_ind);
-            Mat high = high_reader.Get(img_ind);
+            Mat low = low_reader->Get(img_ind);
+            Mat high = high_reader->Get(img_ind);
 
-			low = PredictImage(low, high.size());
+            for (int prev_layer = 0; prev_layer < layer; prev_layer += 1)
+            {
+                low = trees[prev_layer].PredictImage(low, high.size());
+            }
 
-            buf_low.push_back(low);
-            buf_high.push_back(high);
+            low_imgs->images.push_back(low);
+            high_imgs->images.push_back(high);
         }
-
-        Ptr<MemIR> low_imgs = MemIR::Create();
-        low_imgs->images = buf_low;
-        Ptr<MemIR> high_imgs = MemIR::Create();
-        high_imgs->images = buf_high;
-
-        trees.push_back(DTree(settings));
-
-        stat_learn.tree = &trees.back().GetLearnStatus();
-        trees.back().Learn(*low_imgs, *high_imgs);
-        stat_learn.tree = nullptr;
+        DTree::LearnStatus* tree_status = status ? &(status->tree_status) : nullptr;
+        trees[layer].Learn(low_imgs, high_imgs, tree_status);
     }
 }

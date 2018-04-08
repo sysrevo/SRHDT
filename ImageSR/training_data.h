@@ -27,7 +27,8 @@ namespace imgsr
         void Resize(size_t num);
         void Clear();
 
-	    void SetImages(const vector<Mat>& lows, const vector<Mat>& highs);
+        void SetImages(Ptr<const ImgReader> images, int factor);
+	    void SetImages(Ptr<const ImgReader> input_lows, Ptr<const ImgReader> input_highs);
 
         inline size_t Num() const { return data_x.rows(); }
 

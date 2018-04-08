@@ -90,11 +90,20 @@ void TrainingData::Resize(size_t n_patches)
 	data_y = EMat::Zero(n_patches, len_vec);
 }
 
-void TrainingData::SetImages(const vector<Mat>& input_lows, const vector<Mat>& input_highs)
+void TrainingData::SetImages(Ptr<const ImgReader> images, int factor)
 {
-	const size_t n_imgs = input_lows.size();
-	assert(input_highs.size() == n_imgs);
-	assert(input_lows.size() == n_imgs);
+    Ptr<ImgReader> lows = WrappedIR::Create([](Mat* img)
+    {
+        *img = utils::image::ResizeImage(*img, img->size() / 2);
+    });
+    SetImages(lows, images);
+}
+
+void TrainingData::SetImages(Ptr<const ImgReader> input_lows, Ptr<const ImgReader> input_highs)
+{
+	const size_t n_imgs = input_lows->Size();
+	assert(input_highs->Size() == n_imgs);
+	assert(input_lows->Size() == n_imgs);
 
 	vector<vector<Mat>> patches_low_imgs(n_imgs);
 	vector<vector<Mat>> patches_high_imgs(n_imgs);
@@ -102,8 +111,8 @@ void TrainingData::SetImages(const vector<Mat>& input_lows, const vector<Mat>& i
 	#pragma omp parallel for
 	for (int i = 0; i < n_imgs; ++i)
 	{
-		Mat low = input_lows[i];
-		Mat high = input_highs[i];
+		Mat low = input_lows->Get(i);
+		Mat high = input_highs->Get(i);
 
 		high = image::ResizeImageToFitPatchIfNeeded(high, high.size(), settings.patch_size, settings.overlap);
 		low = image::ResizeImageToFitPatchIfNeeded(low, high.size(), settings.patch_size, settings.overlap);

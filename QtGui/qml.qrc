@@ -1,0 +1,8 @@
+<RCC>
+    <qresource prefix="/">
+        <file>main.qml</file>
+        <file>Cell.qml</file>
+        <file>train_view.qml</file>
+        <file>predict_view.qml</file>
+    </qresource>
+</RCC>

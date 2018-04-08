@@ -23,8 +23,8 @@ using namespace utils;
 struct TestCase
 {
 	string json_path;
-    Ptr<ImageReader> low;
-    Ptr<ImageReader> high;
+    Ptr<ImgReader> low;
+    Ptr<ImgReader> high;
 };
 
 const vector<string> valid_type =
@@ -48,7 +48,7 @@ inline bool IsFileImage(const string& file)
 }
 
 TestCase GetHighAndCreateLow(const string & dir_path, int max_num = 0,
-    ImageReader::Handler func_high = nullptr, int times = 2)
+    ImgReader::Handler func_high = nullptr, int times = 2)
 {
 
     auto high_imgs = FileIR::Create(func_high);
@@ -72,7 +72,7 @@ TestCase GetHighAndCreateLow(const string & dir_path, int max_num = 0,
 }
 
 TestCase GetHighAndLow(const string& lr_dir, const string& hr_dir, 
-	ImageReader::Handler low_func = nullptr, ImageReader::Handler high_func = nullptr)
+	ImgReader::Handler low_func = nullptr, ImgReader::Handler high_func = nullptr)
 {
 	auto low_imgs = FileIR::Create(low_func);
 	auto high_imgs = FileIR::Create(high_func);
@@ -142,6 +142,15 @@ void Test::Init()
 		manga.json_path = "D:\\test\\manga.json";
 		test_cases["manga"] = manga;
 	}
+
+    // ----------------------- many images ---------------------------
+    {
+        const auto& path_hr = "D:\\test\\images\\training_images";
+        TestCase manga = GetHighAndCreateLow(path_hr, 200);
+        manga.json_path = "D:\\test\\many.json";
+        test_cases["many"] = manga;
+    }
+
 	// ------------ normal ------------------
 	{
 		const auto& path_hr = "D:\\test\\images\\bsd100";
@@ -215,17 +224,16 @@ std::vector<std::string> Test::GetTestCaseNames()
 void Test::Learn(const string& name)
 {
 	const auto& test_case = test_cases[name];
-	const Ptr<ImageReader>& lows = test_case.low;
-	const Ptr<ImageReader>& highs = test_case.high;
+	const Ptr<ImgReader>& lows = test_case.low;
+	const Ptr<ImgReader>& highs = test_case.high;
 	const string& json_path = test_case.json_path;
 
     // learning
-    const HDTrees::LearnStatus* status = nullptr;
+    HDTrees::LearnStatus status;
     bool is_finish = false;
-	status = &hdtrees->GetLearnStatus();
     std::thread t([&is_finish, &status, lows, highs]()
     {
-        hdtrees->Learn(*lows, *highs);
+        hdtrees->Learn(lows, highs, &status);
         is_finish = true;
     });
 
@@ -235,13 +243,13 @@ void Test::Learn(const string& name)
 
     while (!is_finish)
     {
-        if (last_layer == status->layer)
+        if (last_layer == status.layer)
             cout << "\r";
         else
         {
             // layer changed
             cout << endl;
-            last_layer = status->layer;
+            last_layer = status.layer;
         }
 
         // wipe things out
@@ -251,15 +259,12 @@ void Test::Learn(const string& name)
         cout << tmp << "\r";
         
         // output status
-		cout << "curr_layer: " << status->layer;
-		if (status->tree)
-		{
-			cout
-				<< ", samples" << status->tree->n_samples
-				<< ", non-leaves:" << status->tree->n_nonleaf
-				<< ", leaves:" << status->tree->n_leaf
-				<< ", n_test:" << status->tree->n_curr_test;
-		}
+		cout << "curr_layer: " << status.layer;
+		cout
+			<< ", samples" << status.tree_status.n_samples
+			<< ", non-leaves:" << status.tree_status.n_nonleaf
+			<< ", leaves:" << status.tree_status.n_leaf
+			<< ", n_test:" << status.tree_status.n_curr_test;
         cout.flush();
         std::this_thread::sleep_for(std::chrono::milliseconds(50));
     }
@@ -292,8 +297,8 @@ void Test::Test(const string& test_name, const std::vector<std::string>& case_na
 	for (const auto& case_name : case_names)
 	{
 		const auto& test_imgs = test_cases[case_name];
-		const Ptr<ImageReader>& imgs_low = test_imgs.low;
-		const Ptr<ImageReader>& imgs_high = test_imgs.high;
+		const Ptr<ImgReader>& imgs_low = test_imgs.low;
+		const Ptr<ImgReader>& imgs_high = test_imgs.high;
 
 		for (int i = 0; i < imgs_low->Size(); ++i)
 		{

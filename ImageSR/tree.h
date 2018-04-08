@@ -20,17 +20,7 @@ namespace imgsr
 
         DTree(const Settings & settings_);
 
-        /// <summary>
-        /// Learn input patches. Please modified this->settings to match the requirements before calling this function.
-        /// Beware that the number of patches input must be larger than
-        /// the length of a vectorized patch (patchSize * patchSize) and that length must equal what's in the tree's settings,
-        /// otherwise shit happens (part of the regression model will not be invertable, or the size of multiplied matrics is incorrect)
-        /// </summary>
-        /// <param name="low_reader">Image reader of low resolution images</param>
-        /// <param name="high_reader">Image reader of high resolution images.</param>
-        void Learn(const ImageReader& low_reader, const ImageReader& high_reader);
-
-        void Learn(const Ptr<TrainingData> & total_samples);
+        void Learn(Ptr<const ImgReader> lows, Ptr<const ImgReader> highs, LearnStatus* status = nullptr);
 
         /// <summary>
         /// Predict an image. Expected width and height must be at least the width and height of image 'low'.
@@ -57,15 +47,10 @@ namespace imgsr
             return root ? root->GetNumLeafNodes() : 0;
         }
 
-        inline const LearnStatus& GetLearnStatus() const
-        {
-            return learn_stat;
-        }
-
         Settings settings;
+        LearnStatus* status = nullptr;
     private:
         UPtr<DTNode> root = nullptr;
-        LearnStatus learn_stat;
     };
 
     class HDTrees
@@ -74,25 +59,18 @@ namespace imgsr
         struct LearnStatus
         {
             int layer = 0;
-            const DTree::LearnStatus* tree = nullptr;
+            DTree::LearnStatus tree_status;
         };
 
         HDTrees(const Settings & settings_);
 
-        void Learn(const ImageReader& low_reader, const ImageReader& high_reader);
+        void Learn(Ptr<const ImgReader> low_reader, Ptr<const ImgReader> high_reader, LearnStatus* status = nullptr);
 
         Mat PredictImage(const Mat & in_low, cv::Size size) const;
-
-        inline const LearnStatus& GetLearnStatus() const
-        {
-            return stat_learn;
-        }
 
         static Ptr<HDTrees> Create(const Settings& settings);
 
         vector<DTree> trees;
         Settings settings;
-    private:
-        LearnStatus stat_learn;
     };
 }

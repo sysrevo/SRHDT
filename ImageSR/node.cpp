@@ -3,9 +3,9 @@
 
 using namespace imgsr;
 
-DTNode::DTNode(const Ptr<TrainingData>& samples_ptr)
-    : samples(samples_ptr)
+DTNode::DTNode(Ptr<const TrainingData> samples)
 {
+    this->samples = samples;
 }
 
 void DTNode::BecomeLeafNode(const EMat & c)
@@ -14,7 +14,7 @@ void DTNode::BecomeLeafNode(const EMat & c)
     this->model = c;
 }
 
-void DTNode::BecomeNonLeafNode(const Ptr<TrainingData> & left_samples, const Ptr<TrainingData> & right_samples, const BinaryTest& test)
+void DTNode::BecomeNonLeafNode(Ptr<const TrainingData> left_samples, Ptr<const TrainingData> right_samples, const BinaryTest& test)
 {
     this->is_leaf = false;
     this->left = UPtr<DTNode>(new DTNode(left_samples));
@@ -56,13 +56,13 @@ int DTNode::GetNumNodes() const
         return 1 + left->GetNumNodes() + right->GetNumNodes();
 }
 
-void DTNode::CreateLeft(const Ptr<TrainingData>& samples)
+void DTNode::CreateLeft(Ptr<const TrainingData> samples)
 {
     left = nullptr;
     left = std::make_unique<DTNode>(samples);
 }
 
-void DTNode::CreateRight(const Ptr<TrainingData>& samples)
+void DTNode::CreateRight(Ptr<const TrainingData> samples)
 {
     right = nullptr;
     right = std::make_unique<DTNode>(samples);
