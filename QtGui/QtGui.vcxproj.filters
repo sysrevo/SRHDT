@@ -62,19 +62,16 @@
     
   </ItemGroup>
   <ItemGroup>
-    <None Include="Cell.qml">
-      <Filter>Resource Files</Filter>
-    </None>
     <None Include="main.qml">
       <Filter>Resource Files</Filter>
     </None>
-    <None Include="predict_view.qml">
+    <None Include="predict.qml">
       <Filter>Resource Files</Filter>
     </None>
     <QtRcc Include="qml.qrc">
       <Filter>Resource Files</Filter>
     </QtRcc>
-    <None Include="train_view.qml">
+    <None Include="train.qml">
       <Filter>Resource Files</Filter>
     </None>
   </ItemGroup>

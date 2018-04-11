@@ -3,31 +3,41 @@
 
 #include <QObject>
 #include <QTimer>
+#include <QQuickImageProvider>
 
 struct BackEndData;
 
 class BackEnd : public QObject
 {
     Q_OBJECT
-    Q_PROPERTY(int numSamples READ NumSamples NOTIFY DataChanged)
-    Q_PROPERTY(int numNonLeaves READ NumNonLeaves NOTIFY DataChanged)
-    Q_PROPERTY(int numLeaves READ NumLeaves NOTIFY DataChanged)
-    Q_PROPERTY(int numNodes READ NumNodes NOTIFY DataChanged)
-    Q_PROPERTY(int layer READ Layer NOTIFY DataChanged)
+    Q_PROPERTY(int numSamples READ numSamples NOTIFY dataChanged)
+    Q_PROPERTY(int numNonLeaves READ numNonLeaves NOTIFY dataChanged)
+    Q_PROPERTY(int numLeaves READ numLeaves NOTIFY dataChanged)
+    Q_PROPERTY(int numNodes READ numNodes NOTIFY dataChanged)
+    Q_PROPERTY(int layer READ layer NOTIFY dataChanged)
+    Q_PROPERTY(int numTests READ numTests NOTIFY dataChanged)
+    Q_PROPERTY(float percentCurrentTest READ percentCurrentTest NOTIFY dataChanged)
 public:
     explicit BackEnd(QObject *parent = nullptr);
     virtual ~BackEnd();
 
-    Q_INVOKABLE void Read(const QString& path);
-    Q_INVOKABLE void Write(const QString& path);
-    Q_INVOKABLE void Train(const QString& imgsDirPath);
+    Q_INVOKABLE void read(const QString& file_url);
+    Q_INVOKABLE void write(const QString& file_url);
+    Q_INVOKABLE void train(const QString& imgs_dir_url, int patch_size, int overlap,
+        double k, double lamda, int min_patches, int n_tests);
+    Q_INVOKABLE void predict(const QString& img_url);
+    Q_INVOKABLE void predictWithLowRes(const QString& img_url);
+    Q_INVOKABLE void savePredicted(const QString& img_url);
 
+    int numSamples() const;
+    int numNonLeaves() const;
+    int numLeaves() const;
+    int numNodes() const;
+    int layer() const;
+    int numTests() const;
+    float percentCurrentTest() const;
 
-    int NumSamples() const;
-    int NumNonLeaves() const;
-    int NumLeaves() const;
-    int NumNodes() const;
-    int Layer() const;
+    QQuickImageProvider* getProvider() const;
 
 private:
     QTimer* m_timer = nullptr;
@@ -35,15 +45,20 @@ private:
     int n_nonleaves = 0;
     int n_leaves = 0;
     int n_nodes = 0;
-    int layer = 0;
+    int curr_layer = 0;
 
     BackEndData* data = nullptr;
     bool running = false;
 signals:
-    void DataChanged();
+    void dataChanged();
+    void completed();
+    void dataRead();
+    void dataWritten();
+    void imagePredicted();
+    void imageSaved();
 
 public slots:
-    void UpdateData();
+    void updateData();
 };
 
 #endif // BACKEND_H

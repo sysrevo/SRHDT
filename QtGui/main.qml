@@ -1,7 +1,7 @@
 import QtQuick 2.6
 import QtQuick.Controls 2.0
 import QtQuick.Dialogs 1.0
-import data.backend 1.0
+import QtQuick.Layouts 1.3
 
 ApplicationWindow {
     id: root
@@ -9,25 +9,34 @@ ApplicationWindow {
     height: 480
     visible: true
 
-    BackEnd {
-        id: backend
-    }
+    property variant win
+	
+	Column {
+		anchors.centerIn: parent
+		spacing: 3
+		Button {
+			text: qsTr("Train")
 
-	FileDialog {
-		id: file
-        title: "Please choose the directory of training images"
-        selectFolder: true
-        selectExisting: true
-		onAccepted: {
-			console.log("You chose: " + file.fileUrls)
+			onClicked: {
+				var component = Qt.createComponent("/train.qml")
+				if( component.status == Component.Error )
+					console.debug("Error:"+ component.errorString())
+				var window = component.createObject(root)
+				window.show()
+			}
 		}
-		onRejected: {
-			console.log("Canceled")
+
+		Button {
+			text: qsTr("Predict")
+
+			onClicked: {
+				var component = Qt.createComponent("/predict.qml")
+				if( component.status == Component.Error )
+					console.debug("Error:"+ component.errorString())
+				var window = component.createObject(root)
+				window.show()
+			}
 		}
 	}
-
-    Button {
-        text: "start"
-        onClicked: file.open()
-    }
+    
 }

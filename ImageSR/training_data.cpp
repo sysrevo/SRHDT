@@ -158,8 +158,6 @@ void TrainingData::SetImages(Ptr<const ImgReader> input_lows, Ptr<const ImgReade
 			image::VectorizePatch(patch_high, &Y(j + start_index));
 		}
 	}
-
-	EMat img = EMat::Zero(4, 5);
 }
 
 void TrainingData::Clear()

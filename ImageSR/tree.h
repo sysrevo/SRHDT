@@ -48,7 +48,6 @@ namespace imgsr
         }
 
         Settings settings;
-        LearnStatus* status = nullptr;
     private:
         UPtr<DTNode> root = nullptr;
     };
@@ -62,7 +61,7 @@ namespace imgsr
             DTree::LearnStatus tree_status;
         };
 
-        HDTrees(const Settings & settings_);
+        HDTrees(const Settings & settings = Settings());
 
         void Learn(Ptr<const ImgReader> low_reader, Ptr<const ImgReader> high_reader, LearnStatus* status = nullptr);
 
