@@ -18,7 +18,7 @@
 
 using imgsr::HDTrees;
 using imgsr::RapidJsonSerializer;
-using imgsr::ImgReader;
+using imgsr::ImageReader;
 
 using std::thread;
 using std::unique_ptr;
@@ -130,7 +130,7 @@ void BackEnd::read(const QString& file_url)
     {
         RapidJsonSerializer json;
         data->trees = HDTrees();
-        json.Deserialize(path, &(data->trees));
+        json.ReadTrees(path, &(data->trees));
         emit dataRead();
     }
 }
@@ -141,7 +141,7 @@ void BackEnd::write(const QString& file_url)
     if (path.length() != 0)
     {
         RapidJsonSerializer json;
-        json.Serialize(data->trees, path);
+        json.WriteTrees(data->trees, path);
         emit dataWritten();
     }
 }

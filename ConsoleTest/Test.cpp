@@ -23,8 +23,8 @@ using namespace utils;
 struct TestCase
 {
 	string json_path;
-    Ptr<ImgReader> low;
-    Ptr<ImgReader> high;
+    Ptr<ImageReader> low;
+    Ptr<ImageReader> high;
 };
 
 const vector<string> valid_type =
@@ -48,7 +48,7 @@ inline bool IsFileImage(const string& file)
 }
 
 TestCase GetHighAndCreateLow(const string & dir_path, int max_num = 0,
-    ImgReader::Handler func_high = nullptr, int times = 2)
+    ImageReader::Handler func_high = nullptr, int times = 2)
 {
 
     auto high_imgs = FileIR::Create(func_high);
@@ -72,7 +72,7 @@ TestCase GetHighAndCreateLow(const string & dir_path, int max_num = 0,
 }
 
 TestCase GetHighAndLow(const string& lr_dir, const string& hr_dir, 
-	ImgReader::Handler low_func = nullptr, ImgReader::Handler high_func = nullptr)
+	ImageReader::Handler low_func = nullptr, ImageReader::Handler high_func = nullptr)
 {
 	auto low_imgs = FileIR::Create(low_func);
 	auto high_imgs = FileIR::Create(high_func);
@@ -148,7 +148,7 @@ void Test::Init()
         const auto& path_hr = "D:\\test\\images\\training_images";
         TestCase manga = GetHighAndCreateLow(path_hr, 200);
         manga.json_path = "D:\\test\\many.json";
-        test_cases["many"] = manga;
+        test_cases["pexels"] = manga;
     }
 
 	// ------------ normal ------------------
@@ -180,32 +180,6 @@ void Test::Init()
 		test_case.json_path = "D:\\test\\set14.json";
 		test_cases["set14"] = test_case;
 	}
-	// ------------ normal ------------------
-	{
-		const auto& path_hr = "D:\\test\\images\\simple";
-		TestCase test_case = GetHighAndCreateLow(path_hr);
-		test_case.json_path = "D:\\test\\simple.json";
-		test_cases["simple"] = test_case;
-	}
-	{
-		const auto& path_hr = "D:\\test\\images\\simple";
-
-		auto high = FileIR::Create();
-		high->paths = utils::filesys::GetFilesInDir(path_hr);
-		auto low = FileIR::Create([](Mat* img_ptr)
-		{
-			Mat& img = *img_ptr;
-			cv::blur(img, img, cv::Size(5, 5));
-		});
-		low->paths = utils::filesys::GetFilesInDir(path_hr);
-
-		TestCase test_case;
-		test_case.high = high;
-		test_case.low = low;
-
-		test_case.json_path = "D:\\test\\simple.json";
-		test_cases["simple_blur"] = test_case;
-	}
 }
 
 std::vector<std::string> Test::GetTestCaseNames()
@@ -224,8 +198,8 @@ std::vector<std::string> Test::GetTestCaseNames()
 void Test::Learn(const string& name)
 {
 	const auto& test_case = test_cases[name];
-	const Ptr<ImgReader>& lows = test_case.low;
-	const Ptr<ImgReader>& highs = test_case.high;
+	const Ptr<ImageReader>& lows = test_case.low;
+	const Ptr<ImageReader>& highs = test_case.high;
 	const string& json_path = test_case.json_path;
 
     // learning
@@ -276,7 +250,7 @@ void Test::Learn(const string& name)
 	cout << "Elapsed time: " << elapsed_seconds.count() << endl;
 
     RapidJsonSerializer json;
-    json.Serialize(*hdtrees, json_path);
+    json.WriteTrees(*hdtrees, json_path);
 }
 
 void Test::Test(const string& test_name, const std::vector<std::string>& case_names)
@@ -286,9 +260,12 @@ void Test::Test(const string& test_name, const std::vector<std::string>& case_na
 
     RapidJsonSerializer json;
     {
-        json.Deserialize(json_path, hdtrees.get());
+        json.ReadTrees(json_path, hdtrees.get());
         cout << "hdt trees loaded" << endl;
     }
+
+    cout << "number of nodes: " << hdtrees->GetNumNodes() << endl;
+    cout << "number of leaf nodes: " << hdtrees->GetNumLeafNodes() << endl;
 
 	double aver_psnr_bicubic = 0;
 	double aver_psnr_predict = 0;
@@ -297,8 +274,13 @@ void Test::Test(const string& test_name, const std::vector<std::string>& case_na
 	for (const auto& case_name : case_names)
 	{
 		const auto& test_imgs = test_cases[case_name];
-		const Ptr<ImgReader>& imgs_low = test_imgs.low;
-		const Ptr<ImgReader>& imgs_high = test_imgs.high;
+		const Ptr<ImageReader>& imgs_low = test_imgs.low;
+		const Ptr<ImageReader>& imgs_high = test_imgs.high;
+
+        double aver_psnr_diff = 0;
+        double min_psnr_diff = 1000;
+        double max_psnr_diff = -1000;
+        cout << case_name << endl;
 
 		for (int i = 0; i < imgs_low->Size(); ++i)
 		{
@@ -315,16 +297,24 @@ void Test::Test(const string& test_name, const std::vector<std::string>& case_na
 			double psnr_bicubic = image::GetPSNR(low, high);
 			aver_psnr_bicubic += psnr_bicubic;
 			aver_psnr_predict += psnr_predict;
-			cout << "PSNR: " << psnr_bicubic << "; Predict: " << psnr_predict << endl;
-			cout << "PSNR difference: " << psnr_predict - psnr_bicubic << endl;
-			cv::imshow("low", low);
-			cv::imshow("out", out);
-			cv::imshow("high", high);
-			cv::waitKey(0);
+			//cout << "PSNR: " << psnr_bicubic << "; Predict: " << psnr_predict << endl;
+            double psnr_diff = psnr_predict - psnr_bicubic;
+            cout << "\r" << i << ": " << psnr_diff;
+
+            aver_psnr_diff += psnr_diff;
+            min_psnr_diff = std::min(min_psnr_diff, psnr_diff);
+            max_psnr_diff = std::max(max_psnr_diff, psnr_diff);
 
 			img_count += 1;
 		}
+        cout << endl;
+
+        aver_psnr_diff /= imgs_low->Size();
+        cout << "average psnr difference:" << aver_psnr_diff << endl;
+        cout << "max psnr difference:" << max_psnr_diff << endl;
+        cout << "min psnr difference:" << min_psnr_diff << endl;
 	}
+
 
 	aver_psnr_bicubic /= img_count;
 	aver_psnr_predict /= img_count;

@@ -11,17 +11,17 @@
 
 namespace imgsr
 {
-    class ImgReader
+    class ImageReader
     {
     public:
         typedef std::function<void(Mat*)> Handler;
 
-        ImgReader(const vector<Handler> & handlers = vector<Handler>());
-	    ImgReader(const Handler & func);
+        ImageReader(const vector<Handler> & handlers = vector<Handler>());
+	    ImageReader(const Handler & func);
 
         virtual bool Empty() const = 0;
         virtual size_t Size() const = 0;
-        virtual vector<Ptr<ImgReader>> Split(int num) const = 0;
+        virtual vector<Ptr<ImageReader>> Split(int num) const = 0;
 
         Mat Get(size_t ind) const;
 	    inline Mat operator[](int ind) const { return Get(ind); }
@@ -32,7 +32,7 @@ namespace imgsr
     };
 
 
-    class MemIR : public ImgReader
+    class MemIR : public ImageReader
     {
     public:
 	    MAKE_CREATE_FUNC(MemIR)
@@ -40,14 +40,14 @@ namespace imgsr
 
         virtual bool Empty() const override;
         virtual size_t Size()  const override;
-        virtual vector<Ptr<ImgReader>> Split(int num) const override;
+        virtual vector<Ptr<ImageReader>> Split(int num) const override;
 
 	    vector<Mat> images;
     protected:
         virtual Mat Read(size_t ind) const override;
     };
 
-    class FileIR : public ImgReader
+    class FileIR : public ImageReader
     {
     public:
 	    MAKE_CREATE_FUNC(FileIR)
@@ -55,14 +55,14 @@ namespace imgsr
 
         virtual bool Empty() const override;
         virtual size_t Size()  const override;
-        virtual vector<Ptr<ImgReader>> Split(int num) const override;
+        virtual vector<Ptr<ImageReader>> Split(int num) const override;
 
         vector<string> paths;
     protected:
         virtual Mat Read(size_t ind) const override;
     };
 
-    class WrappedIR : public ImgReader
+    class WrappedIR : public ImageReader
     {
     public:
 	    MAKE_CREATE_FUNC(WrappedIR)
@@ -70,9 +70,9 @@ namespace imgsr
 	
 	    virtual bool Empty() const override;
 	    virtual size_t Size() const override;
-        virtual vector<Ptr<ImgReader>> Split(int num) const override;
+        virtual vector<Ptr<ImageReader>> Split(int num) const override;
 
-        Ptr<const ImgReader> source = nullptr;
+        Ptr<const ImageReader> source = nullptr;
     protected:
 	    virtual Mat Read(size_t ind) const override;
     };

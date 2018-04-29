@@ -283,7 +283,7 @@ void DTree::CreateRoot()
     root = std::make_unique<DTNode>();
 }
 
-void DTree::Learn(Ptr<const ImgReader> lows, Ptr<const ImgReader> highs, LearnStatus* status)
+void DTree::Learn(Ptr<const ImageReader> lows, Ptr<const ImageReader> highs, LearnStatus* status)
 {
     auto now = std::chrono::system_clock::now();
     srand(std::chrono::system_clock::to_time_t(now));
@@ -348,7 +348,7 @@ void DTree::Learn(Ptr<const ImgReader> lows, Ptr<const ImgReader> highs, LearnSt
     }
 }
 
-void HDTrees::Learn(Ptr<const ImgReader> low_reader, Ptr<const ImgReader> high_reader, LearnStatus* status)
+void HDTrees::Learn(Ptr<const ImageReader> low_reader, Ptr<const ImageReader> high_reader, LearnStatus* status)
 {
     assert(low_reader->Size() == high_reader->Size());
     assert(!low_reader->Empty());

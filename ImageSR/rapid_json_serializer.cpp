@@ -46,44 +46,30 @@ void ReadDocFromFile(const string & file_path, Document* doc)
     fclose(fp);
 }
 
-void RapidJsonSerializer::Serialize(const DTree & tree, const string & file_path)
+void RapidJsonSerializer::WriteTree(const DTree & tree, const string & file_path)
 {
     Document doc;
     json::SerializeDTree(tree, doc.GetAllocator(), &doc);
     WriteDocToFile(doc, file_path);
 }
 
-void RapidJsonSerializer::Deserialize(const string & file_path, DTree * tree)
+void RapidJsonSerializer::ReadTree(const string & file_path, DTree * tree)
 {
     Document doc;
     ReadDocFromFile(file_path, &doc);
     json::DeserializeDTree(doc, tree);
 }
 
-void RapidJsonSerializer::Serialize(const HDTrees & hdtrees, const string & file_path)
+void RapidJsonSerializer::WriteTrees(const HDTrees & hdtrees, const string & file_path)
 {
     Document doc;
     json::SerializeHDTrees(hdtrees, doc.GetAllocator(), &doc);
     WriteDocToFile(doc, file_path);
 }
 
-void RapidJsonSerializer::Deserialize(const string & file_path, HDTrees * hdtrees)
+void RapidJsonSerializer::ReadTrees(const string & file_path, HDTrees * hdtrees)
 {
     Document doc;
     ReadDocFromFile(file_path, &doc);
     json::DeserializeHDTrees(doc, hdtrees);
-}
-
-void RapidJsonSerializer::DeserializeString(const string & buf, DTree * tree)
-{
-    Document doc;
-    doc.Parse(buf.c_str());
-    json::DeserializeDTree(doc, tree);
-}
-
-void RapidJsonSerializer::DeserializeString(const string & buf, HDTrees * trees)
-{
-    Document doc;
-    doc.Parse(buf.c_str());
-    json::DeserializeHDTrees(doc, trees);
 }

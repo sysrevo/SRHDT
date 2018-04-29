@@ -20,7 +20,7 @@ namespace imgsr
 
         DTree(const Settings & settings_);
 
-        void Learn(Ptr<const ImgReader> lows, Ptr<const ImgReader> highs, LearnStatus* status = nullptr);
+        void Learn(Ptr<const ImageReader> lows, Ptr<const ImageReader> highs, LearnStatus* status = nullptr);
 
         /// <summary>
         /// Predict an image. Expected width and height must be at least the width and height of image 'low'.
@@ -37,15 +37,8 @@ namespace imgsr
         /// <param name="in_patch">Input patch for the prediction. Cols and rows must be the same as settings.patchSize.</param>
         Mat PredictPatch(const Mat & in_patch) const;
 
-        inline int GetNumNodes() const
-        {
-            return root ? root->GetNumNodes() : 0;
-        }
-
-        inline int GetNumLeafNodes() const 
-        {
-            return root ? root->GetNumLeafNodes() : 0;
-        }
+        size_t GetNumNodes() const;
+        size_t GetNumLeafNodes() const;
 
         Settings settings;
     private:
@@ -63,11 +56,14 @@ namespace imgsr
 
         HDTrees(const Settings & settings = Settings());
 
-        void Learn(Ptr<const ImgReader> low_reader, Ptr<const ImgReader> high_reader, LearnStatus* status = nullptr);
+        void Learn(Ptr<const ImageReader> low_reader, Ptr<const ImageReader> high_reader, LearnStatus* status = nullptr);
 
         Mat PredictImage(const Mat & in_low, cv::Size size) const;
 
         static Ptr<HDTrees> Create(const Settings& settings);
+
+        size_t GetNumNodes() const;
+        size_t GetNumLeafNodes() const;
 
         vector<DTree> trees;
         Settings settings;

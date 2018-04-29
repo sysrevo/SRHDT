@@ -90,16 +90,16 @@ void TrainingData::Resize(size_t n_patches)
 	data_y = EMat::Zero(n_patches, len_vec);
 }
 
-void TrainingData::SetImages(Ptr<const ImgReader> images, int factor)
+void TrainingData::SetImages(Ptr<const ImageReader> images, int factor)
 {
-    Ptr<ImgReader> lows = WrappedIR::Create([](Mat* img)
+    Ptr<ImageReader> lows = WrappedIR::Create([](Mat* img)
     {
         *img = utils::image::ResizeImage(*img, img->size() / 2);
     });
     SetImages(lows, images);
 }
 
-void TrainingData::SetImages(Ptr<const ImgReader> input_lows, Ptr<const ImgReader> input_highs)
+void TrainingData::SetImages(Ptr<const ImageReader> input_lows, Ptr<const ImageReader> input_highs)
 {
 	const size_t n_imgs = input_lows->Size();
 	assert(input_highs->Size() == n_imgs);

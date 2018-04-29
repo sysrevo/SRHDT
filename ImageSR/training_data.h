@@ -18,17 +18,16 @@ namespace imgsr
 
         inline void Split(const BinaryTest & test, 
             Ptr<TrainingData> left_out, Ptr<TrainingData> right_out) const
-        {
-            Split(test, left_out.get(), right_out.get());
-        }
+        { Split(test, left_out.get(), right_out.get()); }
+
+        void SetImages(Ptr<const ImageReader> images, int factor);
+        void SetImages(Ptr<const ImageReader> input_lows, Ptr<const ImageReader> input_highs);
 
         size_t GetLeftPatchesNumber(const BinaryTest& test) const;
 
         void Resize(size_t num);
         void Clear();
 
-        void SetImages(Ptr<const ImgReader> images, int factor);
-	    void SetImages(Ptr<const ImgReader> input_lows, Ptr<const ImgReader> input_highs);
 
         inline size_t Num() const { return data_x.rows(); }
 

@@ -5,7 +5,7 @@
 using namespace imgsr;
 using namespace utils;
 
-ImgReader::ImgReader(const vector<Handler> & handlers_)
+ImageReader::ImageReader(const vector<Handler> & handlers_)
 {
     handlers = math::Select(handlers_, [](Handler func) 
     {
@@ -13,12 +13,12 @@ ImgReader::ImgReader(const vector<Handler> & handlers_)
     });
 }
 
-ImgReader::ImgReader(const Handler & func)
-	: ImgReader(vector<Handler>({ func }))
+ImageReader::ImageReader(const Handler & func)
+	: ImageReader(vector<Handler>({ func }))
 {
 }
 
-Mat ImgReader::Get(size_t ind) const
+Mat ImageReader::Get(size_t ind) const
 {
     Mat res = Read(ind);
     for (const auto & func : handlers)
@@ -39,10 +39,10 @@ Mat ImgReader::Get(size_t ind) const
 
 #define MAKE_CONSTRUCTOR(class_type)\
 	class_type::class_type(const Handler & handler)\
-		:ImgReader(handler) {}\
+		:ImageReader(handler) {}\
 	\
 	class_type::class_type(const vector<Handler> & handlers)\
-		: ImgReader(handlers) {}
+		: ImageReader(handlers) {}
 
 MAKE_CREATE_FUNC(MemIR)
 MAKE_CONSTRUCTOR(MemIR)
@@ -57,11 +57,11 @@ size_t MemIR::Size() const
     return images.size();
 }
 
-vector<Ptr<ImgReader>> MemIR::Split(int num) const
+vector<Ptr<ImageReader>> MemIR::Split(int num) const
 {
     vector<vector<Mat>> data = utils::math::SplitEqually(this->images, num);
 
-    vector<Ptr<ImgReader>> res(data.size());
+    vector<Ptr<ImageReader>> res(data.size());
     for (int i = 0; i < data.size(); i += 1)
     {
         auto part = MemIR::Create(handlers);
@@ -91,11 +91,11 @@ size_t FileIR::Size() const
     return paths.size();
 }
 
-vector<Ptr<ImgReader>> FileIR::Split(int num) const
+vector<Ptr<ImageReader>> FileIR::Split(int num) const
 {
     vector<vector<string>> data = utils::math::SplitEqually(this->paths, num);
 
-    vector<Ptr<ImgReader>> res(data.size());
+    vector<Ptr<ImageReader>> res(data.size());
     for (int i = 0; i < data.size(); i += 1)
     {
         auto part = FileIR::Create(handlers);
@@ -128,11 +128,11 @@ size_t WrappedIR::Size() const
 	return -1;
 }
 
-vector<Ptr<ImgReader>> WrappedIR::Split(int num) const
+vector<Ptr<ImageReader>> WrappedIR::Split(int num) const
 {
-    vector<Ptr<ImgReader>> data = this->source->Split(num);
+    vector<Ptr<ImageReader>> data = this->source->Split(num);
 
-    vector<Ptr<ImgReader>> res(data.size());
+    vector<Ptr<ImageReader>> res(data.size());
     for (int i = 0; i < data.size(); i += 1)
     {
         auto part = WrappedIR::Create(handlers);
