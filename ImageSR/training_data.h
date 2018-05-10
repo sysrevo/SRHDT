@@ -23,7 +23,7 @@ namespace imgsr
         void SetImages(Ptr<const ImageReader> images, int factor);
         void SetImages(Ptr<const ImageReader> input_lows, Ptr<const ImageReader> input_highs);
 
-        size_t GetLeftPatchesNumber(const BinaryTest& test) const;
+        size_t CountLeftPatches(const BinaryTest& test) const;
 
         void Resize(size_t num);
         void Clear();
@@ -39,16 +39,16 @@ namespace imgsr
         inline auto X(size_t row) const { return MatX().row(row); }
 	    inline auto Y(size_t row) const { return MatY().row(row); }
 
-	    inline EMat& MatX() { return data_x; }
-	    inline EMat& MatY() { return data_y; }
+	    inline ERowMat& MatX() { return data_x; }
+	    inline ERowMat& MatY() { return data_y; }
 
-        inline const EMat& MatX() const { return data_x; }
-	    inline const EMat& MatY() const { return data_y; }
+        inline const ERowMat& MatX() const { return data_x; }
+	    inline const ERowMat& MatY() const { return data_y; }
 
         const Settings settings;
         const int len_vec;
     private:
-	    EMat data_x;
-	    EMat data_y;
+	    ERowMat data_x;
+        ERowMat data_y;
     };
 }

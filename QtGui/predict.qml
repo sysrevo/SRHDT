@@ -12,6 +12,7 @@ ApplicationWindow {
 	height: 480
 
 	property string imgPath: "image://colors/red"
+    property string lastFileUrl: ""
 
 	FileDialog {
 		id: file_data
@@ -22,42 +23,52 @@ ApplicationWindow {
 
 		onAccepted: {
 			backend.read(fileUrl)
+			file_data.fileUrl = fileUrl
+			file_pred_bicubic.fileUrl = fileUrl
+			file_pred.fileUrl = fileUrl
+			file_img_save.fileUrl = fileUrl
 		}
 	}
 
 	FileDialog {
-		id: file_predict
+		id: file_pred_bicubic
 		title: "Please choose the data file"
+		nameFilters: ["Image files(*.jpg *.png)"]
+		selectMultiple: false
+		selectFolder: false
+		selectExisting: true
+
+		onAccepted: {
+			backend.predictBicubic(fileUrl)
+			lastFileUrl = fileUrl
+		}
+	}
+
+	FileDialog {
+		id: file_pred
+		title: "Please choose the data file"
+		nameFilters: ["Image files(*.jpg *.png)"]
 		selectMultiple: false
 		selectFolder: false
 		selectExisting: true
 
 		onAccepted: {
 			backend.predict(fileUrl)
-		}
-	}
-
-	FileDialog {
-		id: file_predict_low
-		title: "Please choose the data file"
-		selectMultiple: false
-		selectFolder: false
-		selectExisting: true
-
-		onAccepted: {
-			backend.predictWithLowRes(fileUrl)
+			lastFileUrl = fileUrl
 		}
 	}
 
 	FileDialog {
 		id: file_img_save
 		title: "Please choose the data file"
+		nameFilters: ["Image files(*.png)"]
 		selectMultiple: false
 		selectFolder: false
 		selectExisting: false
 
 		onAccepted: {
 			backend.savePredicted(fileUrl)
+			lastFileUrl = fileUrl
 		}
 	}
 
@@ -113,15 +124,15 @@ ApplicationWindow {
 			id: btn_predict
 			text: "Predict"
 			onClicked: {
-				file_predict.open()
+				file_pred.open()
 			}
 		}
 		
 		Button {
 			id: btn_predict_low
-			text: "Predict"
+			text: "Predict Bicubic"
 			onClicked: {
-				file_predict_low.open()
+				file_pred_bicubic.open()
 			}
 		}
 

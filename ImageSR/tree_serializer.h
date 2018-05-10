@@ -13,6 +13,7 @@ namespace imgsr
         virtual void ReadTrees(const string & file_path, HDTrees* tree) = 0;
     };
 
+    class TrainingData;
     class RapidJsonSerializer : public ITreeSerializer
     {
     public:
@@ -21,5 +22,8 @@ namespace imgsr
 
         virtual void WriteTrees(const HDTrees & tree, const string & path) override;
         virtual void ReadTrees(const string & file_path, HDTrees * tree) override;
+
+        void WriteTrainingData(const TrainingData& samples, const std::string& file);
+        void WriteMatrixData(const EMat& data, const std::string& file);
     };
 }

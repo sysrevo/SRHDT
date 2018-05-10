@@ -55,7 +55,7 @@ namespace imgsr
 
         int layers = 4;
 
-        FuseModelOption fuse_option = FuseModelOption::None;
+        FuseModelOption fuse_option = FuseModelOption::Rotate;
 
         inline int GetVectorLength() const
         {

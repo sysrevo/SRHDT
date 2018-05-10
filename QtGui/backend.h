@@ -25,8 +25,8 @@ public:
     Q_INVOKABLE void write(const QString& file_url);
     Q_INVOKABLE void train(const QString& imgs_dir_url, int patch_size, int overlap,
         double k, double lamda, int min_patches, int n_tests);
+    Q_INVOKABLE void predictBicubic(const QString& img_url);
     Q_INVOKABLE void predict(const QString& img_url);
-    Q_INVOKABLE void predictWithLowRes(const QString& img_url);
     Q_INVOKABLE void savePredicted(const QString& img_url);
 
     int numSamples() const;

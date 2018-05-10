@@ -5,9 +5,7 @@
 #include "image_reader.h"
 #include "../Utils/utils.h"
 
-#ifdef USE_CUDA
-#include "../UtilsCudaHelper/cuda_calculator.h"
-#endif
+#include "tree_serializer.h"
 
 using namespace imgsr;
 using namespace imgsr::utils;
@@ -16,46 +14,11 @@ using namespace imgsr::utils;
 //								Helper Functions
 // -------------------------------------------------------------------------------
 
-inline bool IsNumAvailable(size_t numLeft, size_t numRight, double k)
+inline bool IsNumAvailable(size_t nleft, size_t nright, double k)
 {
-	__int64 tmp = (__int64)(std::max(numLeft, numRight) * k);
-	__int64 tmp2 = (__int64)std::min(numLeft, numRight);
+	__int64 tmp = (__int64)(std::max(nleft, nright) * k);
+	__int64 tmp2 = (__int64)std::min(nleft, nright);
 	return tmp <= tmp2;
-}
-
-// using regularized linear regression
-// C = (XT * X + lamda)-1 * XT * Y
-template<class Input1, class Input2>
-inline EMat GetRegressionModel(const Input1 & x, const Input2 & y, double lamda)
-{
-	EMat xt = x.transpose();
-	EMat tmp_lamda = lamda * ERowMat::Identity(x.cols(), x.cols());
-
-	EMat c;
-	if (x.rows() * x.cols() <= 360000)
-	{
-		c = ((xt * x + tmp_lamda).inverse()) * xt * y;
-	}
-	else
-	{
-		CudaMat cuda_xt(xt);
-		EMat part1;
-		{ // xt * x
-			CudaMat cuda_x(x);
-			CudaMat res;
-			CudaCalculator::Mul(cuda_xt, cuda_x, &res);
-			part1 = res.GetMat();
-		}
-		EMat part2;
-		{ // xt * y
-			CudaMat cuda_y(y);
-			CudaMat res;
-			CudaCalculator::Mul(cuda_xt, cuda_y, &res);
-			part2 = res.GetMat();
-		}
-		c = (part1 + tmp_lamda).inverse() * part2;
-	}
-	return c;
 }
 
 // return the error reduction R at node j
@@ -69,19 +32,7 @@ inline Real GetErrorReduction(Real ej, size_t nl, Real el, size_t nr, Real er)
 
 inline Real GetFittingError(const EMat& c, const EMat& x, const EMat& y)
 {
-	EMat yr;
-#ifdef USE_CUDA
-	if (x.rows() * x.cols() <= 360000)
-	{
-		yr = x * c;
-	}
-	else
-	{
-		yr = CudaCalculator::Mul(x, c);
-	}
-#else
-    yr = x * c;
-#endif
+	EMat yr = x * c;
 	EMat delta = y - yr;
 	auto tmp = delta.squaredNorm();
 	return delta.squaredNorm() / y.rows();
@@ -113,49 +64,6 @@ CalculationResult DoComplexCalculation(const Input1 & x, const Input2 & y, Real 
 	}
 	return res;
 }
-
-#ifdef USE_CUDA
-template<class Input1, class Input2>
-CalculationResult DoComplexCalculationGpu(const Input1 & x, const Input2 & y, Real lamda)
-{
-	assert(x.rows() == y.rows());
-
-	CalculationResult res;
-	res.num_samples = x.rows();
-
-	CudaMat cuda_x(x);
-	CudaMat cuda_y(y);
-	{
-		CudaMat cuda_xt(x.transpose());
-		EMat part1;
-		{ // xt * x
-			CudaMat res;
-			CudaCalculator::Mul(cuda_xt, cuda_x, &res);
-			part1 = res.GetMat();
-		}
-		EMat part2;
-		{ // xt * y
-			CudaMat res;
-			CudaCalculator::Mul(cuda_xt, cuda_y, &res);
-			part2 = res.GetMat();
-		}
-		EMat tmp_lamda = lamda * ERowMat::Identity(x.cols(), x.cols());
-		res.model = (part1 + tmp_lamda).inverse() * part2;
-	}
-	{
-		CudaMat cuda_model(res.model);
-		CudaMat cuda_yr;
-		CudaCalculator::Mul(cuda_x, cuda_model, &cuda_yr);
-
-		CudaMat cuda_delta;
-		CudaCalculator::Add(cuda_y, cuda_yr, &cuda_delta, 1, -1);
-
-		EMat delta = cuda_delta.GetMat();
-		res.fitting_error = delta.squaredNorm() / y.rows();
-	}
-	return res;
-}
-#endif
 
 template<class Input1, class Input2>
 CalculationResult CalculateModelAndFittingError(const Input1 & x, const Input2 & y, Real lamda)
@@ -241,7 +149,7 @@ BinaryTestResult GenerateTestWithMaxErrorReduction(
 	auto func = [&samples, err](const BinaryTest & test,
 		TrainingData* buf_left, TrainingData* buf_right)
 	{
-		size_t n_left = samples.GetLeftPatchesNumber(test);
+		size_t n_left = samples.CountLeftPatches(test);
 		size_t n_right = samples.Num() - n_left;
 		bool success = IsNumAvailable(n_left, n_right, samples.settings.k);
 		BinaryTestResult res;
@@ -286,7 +194,7 @@ void DTree::CreateRoot()
 void DTree::Learn(Ptr<const ImageReader> lows, Ptr<const ImageReader> highs, LearnStatus* status)
 {
     auto now = std::chrono::system_clock::now();
-    srand(std::chrono::system_clock::to_time_t(now));
+    srand(0);
 
     Ptr<TrainingData> total_samples = TrainingData::Create(settings);
     total_samples->SetImages(lows, highs);
@@ -316,35 +224,37 @@ void DTree::Learn(Ptr<const ImageReader> lows, Ptr<const ImageReader> highs, Lea
             node->GetSamples()->MatY(),
             settings.lamda);
 
+        BinaryTestResult bin_res;
+
+        bool is_leaf = true;
         if (n_samples < 2 * settings.min_n_patches)
+            is_leaf = true;
+        else
+        {
+            bin_res =
+                GenerateTestWithMaxErrorReduction(node_calc_res.fitting_error, *node->GetSamples(), rand(), status);
+            if (bin_res.error_reduction > 0)
+                is_leaf = false;
+            else
+                is_leaf = true;
+        }
+
+        if (is_leaf)
         {
             node->BecomeLeafNode(node_calc_res.model);
             if (status) status->n_leaf += 1;
         }
         else
         {
-            BinaryTestResult bin_res =
-                GenerateTestWithMaxErrorReduction(node_calc_res.fitting_error, *node->GetSamples(), rand(), status);
-            if (bin_res.error_reduction > 0)
-            {
-                node->BecomeNonLeafNode(
-                    std::move(bin_res.left),
-                    std::move(bin_res.right),
-                    bin_res.test);
-                unprocessed.push(node->GetLeft());
-                unprocessed.push(node->GetRight());
-
-                if (status) status->n_nonleaf += 1;
-            }
-            else
-            {
-                // this node is a leaf node
-                node->BecomeLeafNode(node_calc_res.model);
-
-                if (status) status->n_leaf += 1;
-            }
-            node->ClearSamples();
+            node->BecomeNonLeafNode(
+                std::move(bin_res.left),
+                std::move(bin_res.right),
+                bin_res.test);
+            unprocessed.push(node->GetLeft());
+            unprocessed.push(node->GetRight());
+            if (status) status->n_nonleaf += 1;
         }
+        node->ClearSamples();
     }
 }
 

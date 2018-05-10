@@ -93,8 +93,7 @@ namespace image
 	// ========================================================
 
 	double GetPSNR(const Mat & img1, const Mat & img2);
-
-	cv::Scalar GetSSIM(const Mat & a, const Mat & b);
+	double GetSSIM(const Mat & a, const Mat & b);
 
 	// ========================================================
 	//                      Patch Iteration

@@ -192,20 +192,22 @@ void BackEnd::train(const QString& imgs_dir_url, int patch_size, int overlap,
     }));
 }
 
-void BackEnd::predict(const QString & img_url)
-{
-    Mat img = loadImage(img_url);
-    data->curr_image = data->trees.PredictImage(img, img.size() * 2);
-    data->provider.setImage(data->curr_image);
-    emit imagePredicted();
-}
-
-void BackEnd::predictWithLowRes(const QString & img_url)
+void BackEnd::predictBicubic(const QString & img_url)
 {
     Mat img = loadImage(img_url);
     cv::Size size = img.size();
     img = imgsr::utils::image::ResizeImage(img, size / 2);
     img = imgsr::utils::image::ResizeImage(img, size);
+    data->curr_image = img;
+    data->provider.setImage(data->curr_image);
+    emit imagePredicted();
+}
+
+void BackEnd::predict(const QString & img_url)
+{
+    Mat img = loadImage(img_url);
+    cv::Size size = img.size();
+    img = imgsr::utils::image::ResizeImage(img, size / 2);
     data->curr_image = data->trees.PredictImage(img, size);
     data->provider.setImage(data->curr_image);
     emit imagePredicted();

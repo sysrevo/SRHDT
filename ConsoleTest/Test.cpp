@@ -1,6 +1,7 @@
 ﻿#include <thread>
 #include <chrono>
 #include <unordered_map>
+#include <numeric>
 #include "Test.h"
 #include "../Utils/utils.h"
 #include "../ImageSR/tree.h"
@@ -23,6 +24,7 @@ using namespace utils;
 struct TestCase
 {
 	string json_path;
+    Settings settings;
     Ptr<ImageReader> low;
     Ptr<ImageReader> high;
 };
@@ -111,12 +113,14 @@ void Test::Init()
 		const auto& path_lr = "D:\\test\\images\\nice\\set5\\lr";
 		const auto& path_hr = "D:\\test\\images\\nice\\set5\\hr";
 		TestCase test_case = GetHighAndLow(path_lr, path_hr);
+        test_case.settings = settings;
 		test_cases["nice_set5"] = test_case;
 	}
 	{
 		const auto& path_lr = "D:\\test\\images\\nice\\set14\\lr";
 		const auto& path_hr = "D:\\test\\images\\nice\\set14\\hr";
 		TestCase test_case = GetHighAndLow(path_lr, path_hr);
+        test_case.settings = settings;
 		test_cases["nice_set14"] = test_case;
 	}
 	{
@@ -129,6 +133,7 @@ void Test::Init()
 		};
 		TestCase test_case = GetHighAndLow(path_lr, path_hr, nullptr, clip_one_pixel);
 		test_case.json_path = "D:\\test\\nice_bsd100.json";
+        test_case.settings = settings;
 		test_cases["nice_bsd100"] = test_case;
 	}
 	// ----------------------- manga ---------------------------
@@ -140,24 +145,50 @@ void Test::Init()
 			img = image::ResizeImage(img, img.size() / 4);
 		});
 		manga.json_path = "D:\\test\\manga.json";
+        manga.settings = settings;
 		test_cases["manga"] = manga;
 	}
 
-    // ----------------------- many images ---------------------------
+    // ----------------------- pexels ---------------------------
     {
-        const auto& path_hr = "D:\\test\\images\\training_images";
-        TestCase manga = GetHighAndCreateLow(path_hr, 200);
-        manga.json_path = "D:\\test\\many.json";
-        test_cases["pexels"] = manga;
+        const auto& path_hr = "D:\\test\\images\\pexels400";
+        TestCase pexels = GetHighAndCreateLow(path_hr, 400);
+        pexels.json_path = "D:\\test\\pexels400.json";
+        pexels.settings = settings;
+        test_cases["pexels400"] = pexels;
+    }
+    {
+        const auto& path_hr = "D:\\test\\images\\pexels400";
+        TestCase pexels = GetHighAndCreateLow(path_hr, 400, nullptr, 3);
+        pexels.json_path = "D:\\test\\pexels400_3.json";
+        pexels.settings = settings;
+        test_cases["pexels400_3"] = pexels;
+    }
+    {
+        const auto& path_hr = "D:\\test\\images\\pexels200";
+        TestCase pexels = GetHighAndCreateLow(path_hr, 200);
+        pexels.json_path = "D:\\test\\pexels.json";
+        pexels.settings = settings;
+        pexels.settings.fuse_option = Settings::None;
+        test_cases["pexels_nf"] = pexels;
     }
 
 	// ------------ normal ------------------
 	{
 		const auto& path_hr = "D:\\test\\images\\bsd100";
-		TestCase test_case = GetHighAndCreateLow(path_hr);
-		test_case.json_path = "D:\\test\\bsd100.json";
-		test_cases["bsd100"] = test_case;
+		TestCase bsd100 = GetHighAndCreateLow(path_hr);
+		bsd100.json_path = "D:\\test\\bsd100.json";
+        bsd100.settings = settings;
+		test_cases["bsd100"] = bsd100;
 	}
+    {
+        const auto& path_hr = "D:\\test\\images\\bsd100";
+        TestCase bsd100 = GetHighAndCreateLow(path_hr);
+        bsd100.json_path = "D:\\test\\bsd100_1.json";
+        bsd100.settings = settings;
+        bsd100.settings.layers = 1;
+        test_cases["bsd100_1"] = bsd100;
+    }
 	{
 		const auto& path_hr = "D:\\test\\images\\set5";
 		auto clip_one_pixel = [](Mat* img_ptr)
@@ -167,6 +198,7 @@ void Test::Init()
 		};
 		TestCase test_case = GetHighAndCreateLow(path_hr);
 		test_case.json_path = "D:\\test\\set5.json";
+        test_case.settings = settings;
 		test_cases["set5"] = test_case;
 	}
 	{
@@ -178,6 +210,7 @@ void Test::Init()
 		};
 		TestCase test_case = GetHighAndCreateLow(path_hr);
 		test_case.json_path = "D:\\test\\set14.json";
+        test_case.settings = settings;
 		test_cases["set14"] = test_case;
 	}
 }
@@ -198,6 +231,7 @@ std::vector<std::string> Test::GetTestCaseNames()
 void Test::Learn(const string& name)
 {
 	const auto& test_case = test_cases[name];
+    hdtrees->settings = test_case.settings;
 	const Ptr<ImageReader>& lows = test_case.low;
 	const Ptr<ImageReader>& highs = test_case.high;
 	const string& json_path = test_case.json_path;
@@ -253,8 +287,88 @@ void Test::Learn(const string& name)
     json.WriteTrees(*hdtrees, json_path);
 }
 
+class Analyzer
+{
+public:
+    void Analyze(const Mat& low, const Mat& high, long long time)
+    {
+        double psnr = image::GetPSNR(low, high);
+        double ssim = image::GetSSIM(low, high);
+        psnrs.push_back(psnr);
+        ssims.push_back(ssim);
+        times.push_back(time);
+    }
+
+    void Append(const Analyzer& other)
+    {
+        psnrs.insert(psnrs.end(), other.psnrs.begin(), other.psnrs.end());
+        ssims.insert(ssims.end(), other.ssims.begin(), other.ssims.end());
+    }
+
+    // return the last psnr value
+    // , 0 if no image has been analyzed
+    double GetLastPSNR() const
+    {
+        if (psnrs.empty()) return 0;
+        return psnrs.back();
+    }
+
+    // return the last ssim value
+    // , 0 if no image has been analyzed
+    double GetLastSSIM() const
+    {
+        if (ssims.empty()) return 0;
+        return ssims.back();
+    }
+
+    long long GetLastTime() const
+    {
+        if (times.empty()) return 0;
+        return times.back();
+    }
+
+    // return the mean psnr value
+    // , 0 if no image has been analyzed
+    double GetMeanPSNR() const
+    {
+        if (psnrs.empty()) return 0;
+        double sum = std::accumulate(psnrs.begin(), psnrs.end(), 0.0);
+        return sum / psnrs.size();
+    }
+
+    // return the mean ssim value
+    // , 0 if no image has been analyzed
+    double GetMeanSSIM() const
+    {
+        if (ssims.empty()) return 0;
+        double sum = std::accumulate(ssims.begin(), ssims.end(), 0.0);
+        return sum / ssims.size();
+    }
+
+    double GetMeanTime() const
+    {
+        if (times.empty()) return 0;
+        double sum = std::accumulate(times.begin(), times.end(), 0.0);
+        return sum / times.size();
+    }
+
+    size_t Count() const
+    {
+        return psnrs.size();
+    }
+private:
+    vector<double> ssims;
+    vector<double> psnrs;
+    vector<double> times;
+};
+
+const bool print_each = true;
+const bool print_mean = true;
+
 void Test::Test(const string& test_name, const std::vector<std::string>& case_names)
 {
+    using std::chrono::steady_clock;
+    using std::chrono::duration_cast;
 	const auto& test_case = test_cases[test_name];
 	const string& json_path = test_case.json_path;
 
@@ -263,13 +377,12 @@ void Test::Test(const string& test_name, const std::vector<std::string>& case_na
         json.ReadTrees(json_path, hdtrees.get());
         cout << "hdt trees loaded" << endl;
     }
+    hdtrees->settings = test_case.settings;
+    for (auto& tree : hdtrees->trees)
+        tree.settings = hdtrees->settings;
 
     cout << "number of nodes: " << hdtrees->GetNumNodes() << endl;
     cout << "number of leaf nodes: " << hdtrees->GetNumLeafNodes() << endl;
-
-	double aver_psnr_bicubic = 0;
-	double aver_psnr_predict = 0;
-	int img_count = 0;
 
 	for (const auto& case_name : case_names)
 	{
@@ -277,48 +390,51 @@ void Test::Test(const string& test_name, const std::vector<std::string>& case_na
 		const Ptr<ImageReader>& imgs_low = test_imgs.low;
 		const Ptr<ImageReader>& imgs_high = test_imgs.high;
 
-        double aver_psnr_diff = 0;
-        double min_psnr_diff = 1000;
-        double max_psnr_diff = -1000;
         cout << case_name << endl;
 
-		for (int i = 0; i < imgs_low->Size(); ++i)
+        Analyzer analyzer_bicubic;
+        Analyzer analyzer_predict;
+
+		for (int i = 0; i < imgs_low->Size(); i += 1)
 		{
 			Mat high = imgs_high->Get(i);
 			Mat low = imgs_low->Get(i);
-
-
-			//Mat out = MonitorProcessTest(low, high.size());
-			Mat out = hdtrees->PredictImage(low, high.size());
-
+            // resize the image to the desired size
 			high = image::ResizeImageToFitPatchIfNeeded(high, high.size(), hdtrees->settings.patch_size, hdtrees->settings.overlap);
-			low = image::ResizeImageToFitPatchIfNeeded(low, high.size(), hdtrees->settings.patch_size, hdtrees->settings.overlap);
-			double psnr_predict = image::GetPSNR(out, high);
-			double psnr_bicubic = image::GetPSNR(low, high);
-			aver_psnr_bicubic += psnr_bicubic;
-			aver_psnr_predict += psnr_predict;
-			//cout << "PSNR: " << psnr_bicubic << "; Predict: " << psnr_predict << endl;
-            double psnr_diff = psnr_predict - psnr_bicubic;
-            cout << "\r" << i << ": " << psnr_diff;
 
-            aver_psnr_diff += psnr_diff;
-            min_psnr_diff = std::min(min_psnr_diff, psnr_diff);
-            max_psnr_diff = std::max(max_psnr_diff, psnr_diff);
+            auto start = steady_clock::now();
+			Mat bicubic = image::ResizeImageToFitPatchIfNeeded(low, high.size(), hdtrees->settings.patch_size, hdtrees->settings.overlap);
+            auto end = steady_clock::now();
+            auto dif = duration_cast<std::chrono::milliseconds>(end - start).count();
+            analyzer_bicubic.Analyze(bicubic, high, dif);
 
-			img_count += 1;
+            start = steady_clock::now();
+            Mat out = hdtrees->PredictImage(low, high.size());
+            end = steady_clock::now();
+            dif = duration_cast<std::chrono::milliseconds>(end - start).count();
+            analyzer_predict.Analyze(out, high, dif);
+            if (print_each)
+            {
+                cout << "Bicubic PSNR: " << analyzer_bicubic.GetLastPSNR() << endl;
+                cout << "Bicubic SSIM: " << analyzer_bicubic.GetLastSSIM() << endl;
+                cout << "Bicubic Time(ms): " << analyzer_bicubic.GetLastTime() << endl;
+
+                cout << "Predict PSNR: " << analyzer_predict.GetLastPSNR() << endl;
+                cout << "Predict SSIM: " << analyzer_predict.GetLastSSIM() << endl;
+                cout << "Predict Time(ms): " << analyzer_predict.GetLastTime() << endl;
+                cout << endl;
+            }
 		}
-        cout << endl;
+        if (print_mean)
+        {
+            cout << "Mean Bicubic PSNR: " << analyzer_bicubic.GetMeanPSNR() << endl;
+            cout << "Mean Bicubic SSIM: " << analyzer_bicubic.GetMeanSSIM() << endl;
+            cout << "Mean Bicubic Time(ms): " << analyzer_bicubic.GetMeanTime() << endl;
 
-        aver_psnr_diff /= imgs_low->Size();
-        cout << "average psnr difference:" << aver_psnr_diff << endl;
-        cout << "max psnr difference:" << max_psnr_diff << endl;
-        cout << "min psnr difference:" << min_psnr_diff << endl;
+            cout << "Mean Predict PSNR: " << analyzer_predict.GetMeanPSNR() << endl;
+            cout << "Mean Predict SSIM: " << analyzer_predict.GetMeanSSIM() << endl;
+            cout << "Mean Predict Time(ms): " << analyzer_predict.GetMeanTime() << endl;
+            cout << endl;
+        }
 	}
-
-
-	aver_psnr_bicubic /= img_count;
-	aver_psnr_predict /= img_count;
-
-	cout << "Bicubic PSNR: " << aver_psnr_bicubic << endl;
-	cout << "Predict PSNR: " << aver_psnr_predict << endl;
 }

@@ -32,48 +32,80 @@ void TrainingData::Split(const BinaryTest & test,
     size_t n_left = 0;
     for (bool on_left : on_left_res)
         if (on_left) n_left += 1;
-    size_t n_right = n_total - n_left;;
+    size_t n_right = n_total - n_left;
+
+    vector<int> left_indexes;
+    left_indexes.reserve(n_left);
+
+    vector<int> right_indexes;
+    right_indexes.reserve(n_right);
+
+    for (int i = 0; i < n_total; i += 1)
+    {
+        const bool on_left = on_left_res[i];
+        if (on_left)
+            left_indexes.push_back(i);
+        else
+            right_indexes.push_back(i);
+    }
 
     // Clear things up in case of messing up
     // Resize the data to avoid dynamic allocation
     if (out_left)
-        out_left->Resize(n_left);
-
-    if (out_right) 
-        out_right->Resize(n_right); 
-
-    // Split the training data into left and right
-    int ind_left = 0;
-    int ind_right = 0;
-    for (auto i = 0; i < n_total; ++i)
     {
-        const bool on_left = on_left_res[i];
-        if (on_left)
+        out_left->Resize(n_left);
+        #pragma omp parallel for
+        for (int i = 0; i < n_left; i += 1)
         {
-            if (out_left)
-            {
-                out_left->X(ind_left) = X(i);
-                out_left->Y(ind_left) = Y(i);
-            }
-            ++ind_left;
-        }
-        else
-        {
-            if (out_right)
-            {
-                out_right->X(ind_right) = X(i);
-                out_right->Y(ind_right) = Y(i);
-            }
-            ++ind_right;
+            out_left->X(i) = X(left_indexes[i]);
+            out_left->Y(i) = Y(left_indexes[i]);
         }
     }
+
+    if (out_right)
+    {
+        out_right->Resize(n_right);
+        #pragma omp parallel for
+        for (int i = 0; i < n_right; i += 1)
+        {
+            out_right->X(i) = X(right_indexes[i]);
+            out_right->Y(i) = Y(right_indexes[i]);
+        }
+    }
+
+
+    // Split the training data into left and right
+    //int ind_left = 0;
+    //int ind_right = 0;
+    //for (auto i = 0; i < n_total; ++i)
+    //{
+    //    const bool on_left = on_left_res[i];
+    //    if (on_left)
+    //    {
+    //        if (out_left)
+    //        {
+    //            out_left->X(ind_left) = X(i);
+    //            out_left->Y(ind_left) = Y(i);
+    //        }
+    //        ++ind_left;
+    //    }
+    //    else
+    //    {
+    //        if (out_right)
+    //        {
+    //            out_right->X(ind_right) = X(i);
+    //            out_right->Y(ind_right) = Y(i);
+    //        }
+    //        ++ind_right;
+    //    }
+    //}
 
     assert(!out_left || out_left->Num() == ind_left);
     assert(!out_right || out_right->Num() == ind_right);
     assert(ind_left + ind_right == Num());
 }
 
-size_t TrainingData::GetLeftPatchesNumber(const BinaryTest & test) const
+size_t TrainingData::CountLeftPatches(const BinaryTest & test) const
 {
     size_t n_left = 0;
     size_t n_total = Num();
@@ -86,8 +118,10 @@ size_t TrainingData::GetLeftPatchesNumber(const BinaryTest & test) const
 
 void TrainingData::Resize(size_t n_patches)
 {
-	data_x = EMat::Zero(n_patches, len_vec);
-	data_y = EMat::Zero(n_patches, len_vec);
+    data_x.resize(n_patches, len_vec);
+    data_y.resize(n_patches, len_vec);
+	//data_x = EMat::Zero(n_patches, len_vec);
+	//data_y = EMat::Zero(n_patches, len_vec);
 }
 
 void TrainingData::SetImages(Ptr<const ImageReader> images, int factor)
